@@ -800,6 +800,7 @@ function initGame(playerCount) {
             properties: [], // 符合要求的 properties 数组
             offset: { x: offsetX, z: offsetZ },
             jailTurns: 0,
+            jailCount: 0,
             isBankrupt: false
         };
         players.push(player);
@@ -1203,13 +1204,43 @@ function onPlayerLand(player, tile) {
         isWaitingForCardPick = true;
 
     } else if (tile.type === 'jail') {
-        player.jailTurns = 2;
-        eventEl.innerText = `👮 ${player.name} 被抓进警察局了！停赛 2 回合。`;
-        eventEl.style.display = 'block';
-        console.log(`[事件] ${player.name} 入狱`);
-        updateUI();
-        setTimeout(endTurn, 2000);
+        player.jailCount = (player.jailCount || 0) + 1;
         
+        // 稍微延迟，确保玩家棋子已经渲染在格子上
+        setTimeout(() => {
+            if (player.jailCount <= 2) {
+                const fine = Math.floor(Math.random() * 301) + 200; // 200 到 500 之间的随机数
+                console.log(`[事件] ${player.name} 第 ${player.jailCount} 次入狱，提示缴纳保释金：$${fine}`);
+                
+                const wantsToPay = confirm(`你被抓进警察局了！这是你第 ${player.jailCount} 次入狱。\n是否缴纳 $${fine} 保释金立即出狱？`);
+                if (wantsToPay) {
+                    if (player.money >= fine) {
+                        player.money -= fine;
+                        eventEl.innerText = `👮 ${player.name} 缴纳了 $${fine} 保释金，免于停赛！`;
+                        console.log(`[事件] ${player.name} 缴纳 $${fine} 保释金出狱`);
+                    } else {
+                        alert("金币不足，无法缴纳保释金！只能乖乖坐牢。");
+                        player.jailTurns = 2;
+                        eventEl.innerText = `👮 ${player.name} 金币不足，入狱停赛 2 回合。`;
+                        console.log(`[事件] ${player.name} 金币不足，入狱停赛 2 回合`);
+                    }
+                } else {
+                    player.jailTurns = 2;
+                    eventEl.innerText = `👮 ${player.name} 拒绝缴纳保释金，入狱停赛 2 回合。`;
+                    console.log(`[事件] ${player.name} 拒绝缴纳保释金，入狱停赛 2 回合`);
+                }
+            } else {
+                // 第三次及以上，不能保释
+                player.jailTurns = 2;
+                eventEl.innerText = `👮 ${player.name} 已经是第 ${player.jailCount} 次进局子了，不准保释！停赛 2 回合。`;
+                console.log(`[事件] ${player.name} 第 ${player.jailCount} 次入狱，不可保释，停赛 2 回合`);
+            }
+            
+            eventEl.style.display = 'block';
+            updateUI();
+            setTimeout(endTurn, 2000);
+        }, 50);
+
     } else if (tile.type === 'corner') {
         player.money += 200;
         eventEl.innerText = `🎁 ${player.name} 在休息区休息，获得 200 金币！`;
