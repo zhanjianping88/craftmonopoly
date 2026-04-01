@@ -568,6 +568,11 @@ const fontLoader = new FontLoader();
 fontLoader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', function (font) {
     globalFont = font; // 保存到全局
     
+    // 初始化所有卡片的背面文字
+    if (typeof cards !== 'undefined') {
+        cards.forEach(c => updateSpecificCardText(c, "", "机会卡\nChance"));
+    }
+    
     gridCoords.forEach((coord, index) => {
         const { i, j } = coord;
         
@@ -920,7 +925,14 @@ function checkBankruptcy(player) {
 function endTurn() {
     // 隐藏可能未关闭的提示
     document.getElementById('eventText').style.display = 'none';
-    cardGroup.visible = false;
+    
+    // 如果有被翻开的卡片，将其翻转回去
+    if (selectedCard && isCardFaceUp && !isCardFlipping) {
+        selectedCard.rotation.x = Math.PI / 2; // 重新面朝下
+        updateSpecificCardText(selectedCard, "", "机会卡\nChance");
+        selectedCard = null;
+        isCardFaceUp = false;
+    }
     
     // 破产检查
     let anyoneBankrupt = false;
@@ -951,10 +963,10 @@ function endTurn() {
     turnEl.style.color = nextPlayer.colorHex;
     console.log(`[系统] 切换至玩家 ${nextPlayer.id} 的回合`);
     
-    // 如果下个玩家在监狱里
+    // 如果下个玩家在停赛/监狱中
     if (nextPlayer.jailTurns > 0) {
         nextPlayer.jailTurns -= 1;
-        const msg = `🚨 玩家 ${nextPlayer.id} 还在监狱中，剩余 ${nextPlayer.jailTurns} 回合。跳过本回合！`;
+        const msg = `🚨 玩家 ${nextPlayer.id} 处于停赛状态，剩余 ${nextPlayer.jailTurns} 回合。跳过本回合！`;
         console.log(`[事件] ${msg}`);
         const eventEl = document.getElementById('eventText');
         eventEl.innerText = msg;
@@ -1184,25 +1196,11 @@ function onPlayerLand(player, tile) {
         setTimeout(endTurn, 1500);
 
     } else if (tile.type === 'card') {
-        eventEl.innerText = `🃏 ${player.name} 抽到了机会卡！请点击场景中的卡片翻开。`;
+        eventEl.innerText = `🃏 ${player.name} 抽到了机会卡！请在中间的牌堆中自选一张。`;
         eventEl.style.display = 'block';
         console.log(`[事件] ${player.name} 触发机会卡`);
         
-        // 提前随机好卡片效果并更新文字，但不执行
-        const effects = [
-            { type: 'money', msg: "获得奖金\n+100!", amt: 100 },
-            { type: 'money', msg: "缴纳罚款\n-50", amt: -50 },
-            { type: 'move', msg: "顺风车\n前进 2 格", steps: 2 }
-        ];
-        pendingCardEffect = effects[Math.floor(Math.random() * effects.length)];
-        
-        updateCardText(pendingCardEffect.msg, "机会卡\nChance");
-        
-        // 显示卡片动画，具体效果在翻牌动画结束后处理
-        cardGroup.visible = true;
-        cardGroup.rotation.y = 0;
-        isCardFaceUp = false;
-        isCardFlipping = false;
+        isWaitingForCardPick = true;
 
     } else if (tile.type === 'jail') {
         player.jailTurns = 2;
@@ -1371,8 +1369,8 @@ function getDiceEuler(number) {
 
 // 绑定掷骰子按钮事件
 document.getElementById('rollBtn').addEventListener('click', () => {
-    // 如果正在掷骰子或玩家正在移动，则不可再次点击
-    if (isRolling || isPlayerMoving) return;
+    // 如果正在掷骰子、玩家正在移动，或正在等待抽卡，则不可再次点击
+    if (isRolling || isPlayerMoving || isWaitingForCardPick) return;
     
     const currentPlayer = players[currentPlayerTurn];
     console.log(`[游戏状态] 回合开始: 玩家 ${currentPlayer.id} 准备掷骰子...`);
@@ -1391,11 +1389,17 @@ document.getElementById('rollBtn').addEventListener('click', () => {
     document.getElementById('eventText').style.display = 'none';
     document.getElementById('actionPanel').style.display = 'none';
     
-    // 隐藏/重置卡片状态
-    cardGroup.rotation.y = 0;
-    cardGroup.visible = false;
+    // 重置卡片选择状态
+    isWaitingForCardPick = false;
     isCardFlipping = false;
     isCardFaceUp = false;
+    
+    // 如果有被翻开的卡片，将其翻转回去并清除文字
+    if (selectedCard) {
+        selectedCard.rotation.x = Math.PI / 2; // 重新面朝下
+        updateSpecificCardText(selectedCard, "", "机会卡\nChance");
+        selectedCard = null;
+    }
     
     // 计算结果对应需要旋转到的目标欧拉角
     targetQuaternion1.setFromEuler(getDiceEuler(rollResult1));
@@ -1409,80 +1413,105 @@ document.getElementById('rollBtn').addEventListener('click', () => {
     targetQuaternion2.premultiply(yQuat2);
 });
 
-// --- 5.6 添加机会卡片 ---
-const cardGroup = new THREE.Group();
+// --- 5.6 添加机会卡片牌堆 ---
+const cardDeckGroup = new THREE.Group();
+const cards = [];
 const cardWidth = 4;
 const cardHeight = 6;
 const cardGeo = new THREE.PlaneGeometry(cardWidth, cardHeight);
+const cardFrontMat = new THREE.MeshStandardMaterial({ color: 0xffd700, side: THREE.FrontSide });
+const cardBackMat = new THREE.MeshStandardMaterial({ color: 0x1e90ff, side: THREE.FrontSide });
 
-// 卡片正面材质 (例如：金黄色)
-const cardFrontMat = new THREE.MeshStandardMaterial({ 
-    color: 0xffd700, 
-    side: THREE.FrontSide 
-});
-const cardFront = new THREE.Mesh(cardGeo, cardFrontMat);
-cardFront.position.z = 0.01; // 稍微靠前，避免深度冲突(Z-fighting)
-
-// 卡片反面材质 (例如：深蓝色，带有神秘感)
-const cardBackMat = new THREE.MeshStandardMaterial({ 
-    color: 0x1e90ff, 
-    side: THREE.FrontSide // 背面Mesh会旋转180度，所以仍用FrontSide
-});
-const cardBack = new THREE.Mesh(cardGeo, cardBackMat);
-cardBack.rotation.y = Math.PI; // 背面翻转180度
-cardBack.position.z = -0.01; // 稍微靠后
-
-cardGroup.add(cardFront);
-cardGroup.add(cardBack);
-
-// 添加背面文字("机会卡"或"命运卡")
-// 由于在生成卡片时字体可能还没加载完，我们将文字网格留为空或稍后添加
-let cardFrontTextMesh = null;
-let cardBackTextMesh = null;
-
-function updateCardText(frontTextStr, backTextStr) {
-    if (!globalFont) return;
+for (let i = 0; i < 20; i++) {
+    const singleCardGroup = new THREE.Group();
     
-    // 移除旧文字
-    if (cardFrontTextMesh) { cardFront.remove(cardFrontTextMesh); cardFrontTextMesh = null; }
-    if (cardBackTextMesh) { cardBack.remove(cardBackTextMesh); cardBackTextMesh = null; }
-
-    // 背面文字
-    const backTextGeo = new TextGeometry(backTextStr, {
-        font: globalFont, size: 0.6, height: 0.1,
-    });
-    backTextGeo.computeBoundingBox();
-    const bx = -0.5 * (backTextGeo.boundingBox.max.x - backTextGeo.boundingBox.min.x);
-    const by = -0.5 * (backTextGeo.boundingBox.max.y - backTextGeo.boundingBox.min.y);
-    cardBackTextMesh = new THREE.Mesh(backTextGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    cardBackTextMesh.position.set(bx, by, 0.1);
-    cardBack.add(cardBackTextMesh);
-
-    // 正面文字
-    const frontTextGeo = new TextGeometry(frontTextStr, {
-        font: globalFont, size: 0.4, height: 0.05,
-    });
-    frontTextGeo.computeBoundingBox();
-    const fx = -0.5 * (frontTextGeo.boundingBox.max.x - frontTextGeo.boundingBox.min.x);
-    const fy = -0.5 * (frontTextGeo.boundingBox.max.y - frontTextGeo.boundingBox.min.y);
-    cardFrontTextMesh = new THREE.Mesh(frontTextGeo, new THREE.MeshBasicMaterial({ color: 0x000000 }));
-    cardFrontTextMesh.position.set(fx, fy, 0.1);
-    cardFront.add(cardFrontTextMesh);
+    const cardFront = new THREE.Mesh(cardGeo, cardFrontMat);
+    cardFront.position.z = 0.01;
+    
+    const cardBack = new THREE.Mesh(cardGeo, cardBackMat);
+    cardBack.rotation.y = Math.PI;
+    cardBack.position.z = -0.01;
+    
+    singleCardGroup.add(cardFront);
+    singleCardGroup.add(cardBack);
+    
+    // 排列成 5x4 的网格
+    const row = Math.floor(i / 5);
+    const col = i % 5;
+    // 居中偏移
+    singleCardGroup.position.set((col - 2) * 5, 0, (row - 1.5) * 7);
+    
+    // 初始面朝下 (Front 朝 -Y)
+    singleCardGroup.rotation.x = Math.PI / 2; 
+    
+    singleCardGroup.userData = { isCard: true, id: i };
+    cards.push(singleCardGroup);
+    cardDeckGroup.add(singleCardGroup);
 }
 
-// 卡片位置放在棋盘中心上方，偏左一点，不挡住骰子
-cardGroup.position.set(-6, 3, 0); 
-// 初始状态稍作倾斜更自然
-cardGroup.rotation.x = -Math.PI / 6; 
-scene.add(cardGroup);
+// 放在棋盘中心稍微偏上
+cardDeckGroup.position.set(0, 3.1, 0); 
+scene.add(cardDeckGroup);
+
+// 如果字体已经加载完，立即初始化背面文字
+if (typeof globalFont !== 'undefined' && globalFont) {
+    cards.forEach(c => updateSpecificCardText(c, "", "机会卡\nChance"));
+}
+
+function updateSpecificCardText(cardGroupObj, frontTextStr, backTextStr) {
+    if (!globalFont) return;
+    const cardFront = cardGroupObj.children[0];
+    const cardBack = cardGroupObj.children[1];
+    
+    // 清除旧文字
+    const toRemoveFront = [];
+    cardFront.children.forEach(c => { if(c.geometry instanceof TextGeometry) toRemoveFront.push(c); });
+    toRemoveFront.forEach(c => {
+        c.geometry.dispose();
+        c.material.dispose();
+        cardFront.remove(c);
+    });
+    
+    const toRemoveBack = [];
+    cardBack.children.forEach(c => { if(c.geometry instanceof TextGeometry) toRemoveBack.push(c); });
+    toRemoveBack.forEach(c => {
+        c.geometry.dispose();
+        c.material.dispose();
+        cardBack.remove(c);
+    });
+
+    // 背面文字
+    if (backTextStr) {
+        const backTextGeo = new TextGeometry(backTextStr, { font: globalFont, size: 0.6, height: 0.1 });
+        backTextGeo.computeBoundingBox();
+        const bx = -0.5 * (backTextGeo.boundingBox.max.x - backTextGeo.boundingBox.min.x);
+        const by = -0.5 * (backTextGeo.boundingBox.max.y - backTextGeo.boundingBox.min.y);
+        const cardBackTextMesh = new THREE.Mesh(backTextGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        cardBackTextMesh.position.set(bx, by, 0.1);
+        cardBack.add(cardBackTextMesh);
+    }
+
+    // 正面文字
+    if (frontTextStr) {
+        const frontTextGeo = new TextGeometry(frontTextStr, { font: globalFont, size: 0.4, height: 0.05 });
+        frontTextGeo.computeBoundingBox();
+        const fx = -0.5 * (frontTextGeo.boundingBox.max.x - frontTextGeo.boundingBox.min.x);
+        const fy = -0.5 * (frontTextGeo.boundingBox.max.y - frontTextGeo.boundingBox.min.y);
+        const cardFrontTextMesh = new THREE.Mesh(frontTextGeo, new THREE.MeshBasicMaterial({ color: 0x000000 }));
+        cardFrontTextMesh.position.set(fx, fy, 0.1);
+        cardFront.add(cardFrontTextMesh);
+    }
+}
 
 // 卡片动画状态
+let isWaitingForCardPick = false;
+let selectedCard = null;
 let isCardFlipping = false;
 let isCardFaceUp = false; // true表示正面朝上，false表示反面(深蓝色)朝上
 let cardFlipStartTime = 0;
-const cardFlipDuration = 500; // 翻转动画持续时间 0.5 秒 (500ms)
-let cardStartRotationY = 0;
-let cardTargetRotationY = 0;
+const cardFlipDuration = 600; // 翻转动画持续时间
+let cardStartRotationX = 0;
+let cardTargetRotationX = 0;
 
 // --- 5.7 射线检测(Raycaster)用于点击卡片 ---
 const raycaster = new THREE.Raycaster();
@@ -1497,18 +1526,34 @@ window.addEventListener('click', (event) => {
     raycaster.setFromCamera(mouse, camera);
 
     // 计算物体和射线的交点
-    // 我们检测 cardGroup 的子元素 (正反面)
-    const intersects = raycaster.intersectObjects(cardGroup.children);
+    if (isWaitingForCardPick && !isCardFlipping) {
+        // 查找所有卡片组中的网格
+        const intersects = raycaster.intersectObjects(cardDeckGroup.children, true);
 
-    if (intersects.length > 0 && cardGroup.visible) {
-        // 如果点中了卡片且卡片未在翻转中，触发翻转
-        if (!isCardFlipping) {
-            isCardFlipping = true;
-            cardFlipStartTime = performance.now();
-            cardStartRotationY = cardGroup.rotation.y;
-            // 每次点击翻转 180 度 (Math.PI)
-            cardTargetRotationY = isCardFaceUp ? 0 : Math.PI; 
-            isCardFaceUp = !isCardFaceUp;
+        if (intersects.length > 0) {
+            // 找到被点击的卡片组
+            let clickedCard = intersects[0].object.parent;
+            if (clickedCard && clickedCard.userData.isCard) {
+                isWaitingForCardPick = false;
+                isCardFlipping = true;
+                selectedCard = clickedCard;
+                cardFlipStartTime = performance.now();
+                cardStartRotationX = selectedCard.rotation.x;
+                // 从面朝下 (Math.PI/2) 翻转到面朝上 (-Math.PI/2)
+                cardTargetRotationX = -Math.PI / 2; 
+                isCardFaceUp = true;
+                
+                // 随机抽取卡片效果
+                const chanceEffects = [
+                    { type: 'money', msg: "天降横财\n+1000!", amt: 1000 },
+                    { type: 'go_start', msg: "回到起点\n+2000!" },
+                    { type: 'pause', msg: "暂停行动\n停赛 2 回合", turns: 2 }
+                ];
+                pendingCardEffect = chanceEffects[Math.floor(Math.random() * chanceEffects.length)];
+                
+                // 更新该卡片的文字
+                updateSpecificCardText(selectedCard, pendingCardEffect.msg, "机会卡\nChance");
+            }
         }
     }
 });
@@ -1608,8 +1653,8 @@ function animate() {
             currentPlayer.currentIndex = (currentPlayer.currentIndex + 1) % pathPositions.length;
             playerMoveProgress = 0;
             
-            // 如果经过了起点 (index 0) 并且还没到达终点（或者刚好到达起点，都会触发奖励）
-            if (currentPlayer.currentIndex === 0) {
+            // 如果经过了起点 (index 0) 并且还没到达终点（如果刚好到达起点，则由 onPlayerLand 触发奖励）
+            if (currentPlayer.currentIndex === 0 && currentPlayer.currentIndex !== playerTargetIndex) {
                 currentPlayer.money += 2000;
                 console.log(`[事件] 玩家 ${currentPlayer.id} 经过起点，获得 2000 金币！`);
                 updateStatusUI();
@@ -1664,7 +1709,7 @@ function animate() {
     }
     
     // 卡片翻转动画逻辑
-    if (isCardFlipping) {
+    if (isCardFlipping && selectedCard) {
         const now = performance.now();
         const elapsed = now - cardFlipStartTime;
         let progress = elapsed / cardFlipDuration; // 0 到 1
@@ -1688,23 +1733,28 @@ function animate() {
                 if (effect.type === 'money') {
                     player.money += effect.amt;
                     updateUI();
-                    // 2秒后结束回合并隐藏卡片
+                    // 2秒后结束回合
                     setTimeout(() => {
                         endTurn();
                     }, 2000);
-                } else if (effect.type === 'move') {
-                    // 前进2格
+                } else if (effect.type === 'go_start') {
+                    // 回到起点并得2000
                     setTimeout(() => {
-                        cardGroup.visible = false;
-                        playerTargetIndex = (player.currentIndex + effect.steps) % pathPositions.length;
-                        console.log(`[游戏状态] ${player.name} 根据卡片效果开始移动，目标格子: ${playerTargetIndex}`);
+                        console.log(`[游戏状态] ${player.name} 根据卡片效果回到起点`);
                         
-                        isPlayerMoving = true;
-                        playerMoveProgress = 0;
-                        const nextIndex = (player.currentIndex + 1) % pathPositions.length;
-                        movingFromVec.copy(pathPositions[player.currentIndex]);
-                        movingToVec.copy(pathPositions[nextIndex]);
+                        // 瞬移到起点
+                        player.currentIndex = 0;
+                        updateAllPlayersPosition();
+                        
+                        // 触发起点逻辑（里面会加2000金币并结束回合）
+                        onPlayerLand(player, boardCells[0]);
                     }, 1500);
+                } else if (effect.type === 'pause') {
+                    // 暂停回合
+                    player.jailTurns = effect.turns; // 复用 jailTurns 逻辑来实现停赛
+                    setTimeout(() => {
+                        endTurn();
+                    }, 2000);
                 }
                 
                 pendingCardEffect = null; // 效果执行完毕，清空
@@ -1714,8 +1764,13 @@ function animate() {
         // 使用 easeInOutSine 缓动函数让翻牌看起来更平滑自然
         const easeProgress = -(Math.cos(Math.PI * progress) - 1) / 2;
         
-        // 线性插值计算当前的 Y 轴旋转角度
-        cardGroup.rotation.y = THREE.MathUtils.lerp(cardStartRotationY, cardTargetRotationY, easeProgress);
+        // 线性插值计算当前的 X 轴旋转角度 (翻转卡片)
+        selectedCard.rotation.x = THREE.MathUtils.lerp(cardStartRotationX, cardTargetRotationX, easeProgress);
+        
+        // 稍微提升一点 Y 轴高度以突出选中的卡片
+        // 基础高度是 0，当翻转一半时达到最高点
+        const jumpY = Math.sin(progress * Math.PI) * 2;
+        selectedCard.position.y = jumpY;
     }
     
     // 渲染场景
