@@ -28,18 +28,48 @@
     <!-- 游戏初始化/大厅界面 -->
     <div id="lobbyUI" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; color: white; font-family: sans-serif;">
         <h1 style="color: #FFD700; font-size: 48px; text-shadow: 2px 2px 4px #000; margin-bottom: 20px;">3D 大富翁 (Minecraft Style)</h1>
-        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; text-align: center; max-height: 80vh; overflow-y: auto;">
+        
+        <!-- 阶段一：选择人数 -->
+        <div id="lobbyPhase1" style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; text-align: center;">
             <h2 style="margin-top: 0;">游戏设置</h2>
             <div style="margin-bottom: 20px; font-size: 20px;">
                 <label for="playerCount">选择玩家人数 (2-10): </label>
                 <input type="number" id="playerCount" min="2" max="10" value="4" style="font-size: 20px; width: 60px; text-align: center; border-radius: 5px; border: none; padding: 5px;">
             </div>
+            <button id="btnNextPhase" style="padding: 15px 40px; font-size: 24px; font-weight: bold; background-color: #2196F3; color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">下一步: 选择皮肤</button>
+        </div>
+
+        <!-- 阶段二：逐个选择皮肤并 3D 预览 -->
+        <div id="lobbyPhase2" style="display: none; background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; text-align: center; width: 600px;">
+            <h2 id="skinSelectTitle" style="margin-top: 0; color: #4CAF50;">玩家 1 皮肤选择</h2>
             
-            <div id="lobbySkinsContainer" style="margin-bottom: 20px; text-align: left; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
-                <!-- 动态生成大厅的玩家皮肤选择 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="flex: 1; text-align: left; padding-right: 20px;">
+                    <label for="currentSkinSelect" style="display: block; margin-bottom: 10px; font-size: 18px;">选择皮肤模型:</label>
+                    <select id="currentSkinSelect" style="width: 100%; padding: 10px; font-size: 18px; border-radius: 5px;">
+                        <option value="steve">Steve</option>
+                        <option value="alex">Alex</option>
+                        <option value="efe">Efe</option>
+                        <option value="ari">Ari</option>
+                        <option value="kai">Kai</option>
+                        <option value="makena">Makena</option>
+                        <option value="noor">Noor</option>
+                        <option value="sunny">Sunny</option>
+                        <option value="zuri">Zuri</option>
+                    </select>
+                    <p style="color: #aaa; font-size: 14px; margin-top: 15px;">提示: 可以在右侧 3D 视图中用鼠标拖拽旋转预览模型。</p>
+                </div>
+                
+                <!-- 3D 预览容器 -->
+                <div id="skinPreviewContainer" style="width: 250px; height: 350px; background: rgba(0,0,0,0.5); border-radius: 10px; overflow: hidden; cursor: grab;">
+                    <!-- Three.js 预览画布将挂载在这里 -->
+                </div>
             </div>
             
-            <button id="btnStartGame" style="padding: 15px 40px; font-size: 24px; font-weight: bold; background-color: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">开始游戏</button>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button id="btnPrevPlayer" style="padding: 10px 20px; font-size: 18px; background-color: #555; color: white; border: none; border-radius: 5px; cursor: pointer; visibility: hidden;">上一个玩家</button>
+                <button id="btnNextPlayer" style="padding: 10px 30px; font-size: 18px; font-weight: bold; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">确认并继续</button>
+            </div>
         </div>
     </div>
 

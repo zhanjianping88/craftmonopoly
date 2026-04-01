@@ -751,55 +751,125 @@ const playerConfigs = [
 let players = [];
 let currentPlayerTurn = 0;
 
-// 更新皮肤的辅助函数
-function updatePlayerSkin(playerGroup, skinName) {
-    const materials = createPlayerSkinMaterials(skinName);
-    const parts = playerGroup.userData;
-    
-    parts.head.material = materials.head;
-    parts.body.material = materials.body;
-    parts.leftArm.material = materials.arm;
-    parts.rightArm.material = materials.arm;
-    parts.leftLeg.material = materials.leg;
-    parts.rightLeg.material = materials.leg;
+// 存储玩家在大厅中选择的皮肤
+const selectedPlayerSkins = [];
+
+// --- 大厅皮肤预览 3D 场景 ---
+const previewContainer = document.getElementById('skinPreviewContainer');
+const previewScene = new THREE.Scene();
+previewScene.background = new THREE.Color(0x333333);
+
+const previewCamera = new THREE.PerspectiveCamera(45, 250 / 350, 0.1, 100);
+previewCamera.position.set(0, 15, 30);
+previewCamera.lookAt(0, 5, 0);
+
+const previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+previewRenderer.setSize(250, 350);
+previewContainer.appendChild(previewRenderer.domElement);
+
+const previewLight = new THREE.DirectionalLight(0xffffff, 1.2);
+previewLight.position.set(10, 20, 10);
+previewScene.add(previewLight);
+previewScene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+const previewControls = new OrbitControls(previewCamera, previewRenderer.domElement);
+previewControls.enableZoom = false;
+previewControls.enablePan = false;
+previewControls.target.set(0, 5, 0);
+
+let previewModel = null;
+
+function updatePreviewModel(skinName, colorHex) {
+    if (previewModel) {
+        previewScene.remove(previewModel);
+    }
+    // 预览模型稍微大一点
+    previewModel = createPlayerModel(skinName, colorHex, 0.4, true);
+    previewModel.position.set(0, -2, 0);
+    previewScene.add(previewModel);
 }
 
-// 初始化大厅玩家皮肤选择
-function updateLobbySkins() {
+// 独立的预览渲染循环
+function animatePreview() {
+    requestAnimationFrame(animatePreview);
+    previewControls.update();
+    if (document.getElementById('lobbyPhase2').style.display !== 'none') {
+        previewRenderer.render(previewScene, previewCamera);
+    }
+}
+animatePreview();
+
+// --- 大厅多阶段逻辑 ---
+let currentSetupPlayerIndex = 0;
+let totalSetupPlayers = 0;
+
+document.getElementById('btnNextPhase').addEventListener('click', () => {
     const countInput = document.getElementById('playerCount');
-    let count = parseInt(countInput.value);
-    if (isNaN(count) || count < 2) count = 2;
-    if (count > 10) count = 10;
+    totalSetupPlayers = parseInt(countInput.value);
+    if (isNaN(totalSetupPlayers) || totalSetupPlayers < 2) totalSetupPlayers = 2;
+    if (totalSetupPlayers > 10) totalSetupPlayers = 10;
     
-    const container = document.getElementById('lobbySkinsContainer');
-    container.innerHTML = '';
+    // 初始化选中的皮肤数组
+    selectedPlayerSkins.length = 0;
+    for (let i = 0; i < totalSetupPlayers; i++) {
+        selectedPlayerSkins.push(playerConfigs[i % playerConfigs.length].skin);
+    }
     
-    for (let i = 0; i < count; i++) {
-        const config = playerConfigs[i % playerConfigs.length];
-        const div = document.createElement('div');
-        div.style.cssText = 'margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;';
-        div.innerHTML = `
-            <label for="lobbySkin${i}" style="color: ${config.colorHex}; font-weight: bold;">玩家 ${i + 1} (${config.colorName}):</label>
-            <select id="lobbySkin${i}" style="padding: 5px; border-radius: 4px; width: 120px; background: rgba(255,255,255,0.9);">
-                <option value="steve" ${config.skin === 'steve' ? 'selected' : ''}>Steve</option>
-                <option value="alex" ${config.skin === 'alex' ? 'selected' : ''}>Alex</option>
-                <option value="efe" ${config.skin === 'efe' ? 'selected' : ''}>Efe</option>
-                <option value="ari" ${config.skin === 'ari' ? 'selected' : ''}>Ari</option>
-                <option value="kai" ${config.skin === 'kai' ? 'selected' : ''}>Kai</option>
-                <option value="makena" ${config.skin === 'makena' ? 'selected' : ''}>Makena</option>
-                <option value="noor" ${config.skin === 'noor' ? 'selected' : ''}>Noor</option>
-                <option value="sunny" ${config.skin === 'sunny' ? 'selected' : ''}>Sunny</option>
-                <option value="zuri" ${config.skin === 'zuri' ? 'selected' : ''}>Zuri</option>
-            </select>
-        `;
-        container.appendChild(div);
+    document.getElementById('lobbyPhase1').style.display = 'none';
+    document.getElementById('lobbyPhase2').style.display = 'block';
+    
+    currentSetupPlayerIndex = 0;
+    updateSkinSelectUI();
+});
+
+function updateSkinSelectUI() {
+    const config = playerConfigs[currentSetupPlayerIndex % playerConfigs.length];
+    
+    document.getElementById('skinSelectTitle').innerText = `玩家 ${currentSetupPlayerIndex + 1} 皮肤选择`;
+    document.getElementById('skinSelectTitle').style.color = config.colorHex;
+    
+    const selectEl = document.getElementById('currentSkinSelect');
+    selectEl.value = selectedPlayerSkins[currentSetupPlayerIndex];
+    
+    updatePreviewModel(selectEl.value, config.hex);
+    
+    // 更新按钮状态
+    document.getElementById('btnPrevPlayer').style.visibility = currentSetupPlayerIndex > 0 ? 'visible' : 'hidden';
+    
+    const nextBtn = document.getElementById('btnNextPlayer');
+    if (currentSetupPlayerIndex === totalSetupPlayers - 1) {
+        nextBtn.innerText = '开始游戏!';
+        nextBtn.style.backgroundColor = '#FF9800';
+    } else {
+        nextBtn.innerText = '下一个玩家';
+        nextBtn.style.backgroundColor = '#4CAF50';
     }
 }
 
-// 监听人数变化以更新大厅皮肤选择
-document.getElementById('playerCount').addEventListener('change', updateLobbySkins);
-// 初始调用一次
-updateLobbySkins();
+document.getElementById('currentSkinSelect').addEventListener('change', (e) => {
+    selectedPlayerSkins[currentSetupPlayerIndex] = e.target.value;
+    const config = playerConfigs[currentSetupPlayerIndex % playerConfigs.length];
+    updatePreviewModel(e.target.value, config.hex);
+});
+
+document.getElementById('btnPrevPlayer').addEventListener('click', () => {
+    if (currentSetupPlayerIndex > 0) {
+        currentSetupPlayerIndex--;
+        updateSkinSelectUI();
+    }
+});
+
+document.getElementById('btnNextPlayer').addEventListener('click', () => {
+    if (currentSetupPlayerIndex < totalSetupPlayers - 1) {
+        currentSetupPlayerIndex++;
+        updateSkinSelectUI();
+    } else {
+        // 所有玩家都设置完毕，开始游戏
+        document.getElementById('lobbyUI').style.display = 'none';
+        document.getElementById('gameUI').style.display = 'block';
+        initGame(totalSetupPlayers);
+    }
+});
 
 // 初始化游戏函数
 function initGame(playerCount) {
@@ -813,15 +883,13 @@ function initGame(playerCount) {
     for (let i = 0; i < playerCount; i++) {
         const config = playerConfigs[i % playerConfigs.length];
         
-        // 从大厅 UI 获取选中的皮肤，如果找不到则用默认的
-        const skinSelect = document.getElementById(`lobbySkin${i}`);
-        const selectedSkin = skinSelect ? skinSelect.value : config.skin;
+        // 获取该玩家在多阶段大厅中选择的皮肤
+        const selectedSkin = selectedPlayerSkins[i] || config.skin;
         
         const model = createPlayerModel(selectedSkin, config.hex);
         scene.add(model);
 
         // 计算偏移量，让多个玩家在同一个格子上时分散开
-        // 10人分散在一个 4x4 的格子上
         const angle = (i / playerCount) * Math.PI * 2;
         const radius = 1.2;
         const offsetX = Math.cos(angle) * radius;
@@ -829,15 +897,15 @@ function initGame(playerCount) {
 
         const player = {
             id: i + 1,
-            name: `玩家 ${i + 1}`, // 符合要求的 name
+            name: `玩家 ${i + 1}`,
             group: model,
             colorName: config.colorName,
             colorHex: config.colorHex,
             hex: config.hex,
-            position: 0, // 符合要求的 position
-            currentIndex: 0, // 兼容旧逻辑
+            position: 0,
+            currentIndex: 0,
             money: 2000,
-            properties: [], // 符合要求的 properties 数组
+            properties: [],
             offset: { x: offsetX, z: offsetZ },
             jailTurns: 0,
             jailCount: 0,
@@ -863,21 +931,6 @@ function initGame(playerCount) {
     turnEl.innerText = `当前回合: 玩家 ${firstPlayer.id} (${firstPlayer.colorName})`;
     turnEl.style.color = firstPlayer.colorHex;
 }
-
-// 监听开始游戏按钮
-document.getElementById('btnStartGame').addEventListener('click', () => {
-    const countInput = document.getElementById('playerCount');
-    let count = parseInt(countInput.value);
-    if (isNaN(count) || count < 2) count = 2;
-    if (count > 10) count = 10;
-
-    initGame(count);
-
-    document.getElementById('lobbyUI').style.display = 'none';
-    document.getElementById('gameUI').style.display = 'block';
-});
-
-// 监听桌面巨人皮肤更换
 document.getElementById('giantSkin').addEventListener('change', (e) => {
     updatePlayerSkin(giantPlayer, e.target.value);
     console.log(`[系统] 桌面巨人更换了皮肤: ${e.target.value}`);
