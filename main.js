@@ -560,9 +560,14 @@ for (let j = boardSize - 2; j >= 0; j--) gridCoords.push({ i: boardSize - 1, j: 
 // 左边 (从下到上)
 for (let i = boardSize - 2; i > 0; i--) gridCoords.push({ i: i, j: 0 });
 
+// 全局字体变量，用于在其他地方生成文字
+let globalFont = null;
+
 // 加载字体
 const fontLoader = new FontLoader();
 fontLoader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', function (font) {
+    globalFont = font; // 保存到全局
+    
     gridCoords.forEach((coord, index) => {
         const { i, j } = coord;
         
@@ -1110,6 +1115,9 @@ function addHouseToCell(cell, colorHex, level) {
     }
 }
 
+// 记录当前卡片效果供翻面后使用
+let pendingCardEffect = null;
+
 function onPlayerLand(player, tile) {
     const eventEl = document.getElementById('eventText');
     console.log(`[事件] ${player.name} 到达了格子: ${tile.name} (类型: ${tile.type})`);
@@ -1176,9 +1184,19 @@ function onPlayerLand(player, tile) {
         setTimeout(endTurn, 1500);
 
     } else if (tile.type === 'card') {
-        eventEl.innerText = `🃏 ${player.name} 抽到了机会卡！`;
+        eventEl.innerText = `🃏 ${player.name} 抽到了机会卡！请点击场景中的卡片翻开。`;
         eventEl.style.display = 'block';
         console.log(`[事件] ${player.name} 触发机会卡`);
+        
+        // 提前随机好卡片效果并更新文字，但不执行
+        const effects = [
+            { type: 'money', msg: "获得奖金\n+100!", amt: 100 },
+            { type: 'money', msg: "缴纳罚款\n-50", amt: -50 },
+            { type: 'move', msg: "顺风车\n前进 2 格", steps: 2 }
+        ];
+        pendingCardEffect = effects[Math.floor(Math.random() * effects.length)];
+        
+        updateCardText(pendingCardEffect.msg, "机会卡\nChance");
         
         // 显示卡片动画，具体效果在翻牌动画结束后处理
         cardGroup.visible = true;
@@ -1417,6 +1435,41 @@ cardBack.position.z = -0.01; // 稍微靠后
 cardGroup.add(cardFront);
 cardGroup.add(cardBack);
 
+// 添加背面文字("机会卡"或"命运卡")
+// 由于在生成卡片时字体可能还没加载完，我们将文字网格留为空或稍后添加
+let cardFrontTextMesh = null;
+let cardBackTextMesh = null;
+
+function updateCardText(frontTextStr, backTextStr) {
+    if (!globalFont) return;
+    
+    // 移除旧文字
+    if (cardFrontTextMesh) { cardFront.remove(cardFrontTextMesh); cardFrontTextMesh = null; }
+    if (cardBackTextMesh) { cardBack.remove(cardBackTextMesh); cardBackTextMesh = null; }
+
+    // 背面文字
+    const backTextGeo = new TextGeometry(backTextStr, {
+        font: globalFont, size: 0.6, height: 0.1,
+    });
+    backTextGeo.computeBoundingBox();
+    const bx = -0.5 * (backTextGeo.boundingBox.max.x - backTextGeo.boundingBox.min.x);
+    const by = -0.5 * (backTextGeo.boundingBox.max.y - backTextGeo.boundingBox.min.y);
+    cardBackTextMesh = new THREE.Mesh(backTextGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    cardBackTextMesh.position.set(bx, by, 0.1);
+    cardBack.add(cardBackTextMesh);
+
+    // 正面文字
+    const frontTextGeo = new TextGeometry(frontTextStr, {
+        font: globalFont, size: 0.4, height: 0.05,
+    });
+    frontTextGeo.computeBoundingBox();
+    const fx = -0.5 * (frontTextGeo.boundingBox.max.x - frontTextGeo.boundingBox.min.x);
+    const fy = -0.5 * (frontTextGeo.boundingBox.max.y - frontTextGeo.boundingBox.min.y);
+    cardFrontTextMesh = new THREE.Mesh(frontTextGeo, new THREE.MeshBasicMaterial({ color: 0x000000 }));
+    cardFrontTextMesh.position.set(fx, fy, 0.1);
+    cardFront.add(cardFrontTextMesh);
+}
+
 // 卡片位置放在棋盘中心上方，偏左一点，不挡住骰子
 cardGroup.position.set(-6, 3, 0); 
 // 初始状态稍作倾斜更自然
@@ -1625,15 +1678,11 @@ function animate() {
                 const player = players[currentPlayerTurn];
                 const eventEl = document.getElementById('eventText');
                 
-                // 随机效果: +100, -50, 前进2格
-                const effects = [
-                    { type: 'money', msg: "获得奖金，+100！", amt: 100 },
-                    { type: 'money', msg: "缴纳罚款，-50。", amt: -50 },
-                    { type: 'move', msg: "顺风车，前进 2 格！", steps: 2 }
-                ];
-                const effect = effects[Math.floor(Math.random() * effects.length)];
+                // 使用之前随机好的效果
+                const effect = pendingCardEffect;
+                if (!effect) return; // 防御性检查
                 
-                eventEl.innerText = `🃏 卡片效果: ${effect.msg}`;
+                eventEl.innerText = `🃏 卡片效果: ${effect.msg.replace('\n', ' ')}`;
                 console.log(`[事件] ${eventEl.innerText}`);
                 
                 if (effect.type === 'money') {
@@ -1657,6 +1706,8 @@ function animate() {
                         movingToVec.copy(pathPositions[nextIndex]);
                     }, 1500);
                 }
+                
+                pendingCardEffect = null; // 效果执行完毕，清空
             }
         }
         
