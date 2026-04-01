@@ -1557,8 +1557,8 @@ for (let i = 0; i < 20; i++) {
     cardDeckGroup.add(singleCardGroup);
 }
 
-// 放在棋盘中心稍微偏上
-cardDeckGroup.position.set(0, 3.1, 0); 
+// 放在棋盘中心稍微偏上，并向Z轴正方向平移，以避开原点的骰子
+cardDeckGroup.position.set(0, 3.1, 10); 
 scene.add(cardDeckGroup);
 
 // 如果字体已经加载完，立即初始化背面文字
