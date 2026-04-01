@@ -995,12 +995,17 @@ function endTurn() {
     // 隐藏可能未关闭的提示
     document.getElementById('eventText').style.display = 'none';
     
-    // 如果有被翻开的卡片，将其翻转回去
+    // 如果有被翻开的卡片，将其翻转回去并清除文字
     if (selectedCard && isCardFaceUp && !isCardFlipping) {
         selectedCard.rotation.x = Math.PI / 2; // 重新面朝下
         updateSpecificCardText(selectedCard, "", "机会卡\nChance");
         selectedCard = null;
         isCardFaceUp = false;
+    }
+    
+    // 如果牌堆是散开的，收回牌堆
+    if (isDeckSpread && !isDeckAnimating) {
+        triggerDeckAnimation(false);
     }
     
     // 破产检查
@@ -1278,7 +1283,13 @@ function onPlayerLand(player, tile) {
         eventEl.style.display = 'block';
         console.log(`[事件] ${player.name} 触发机会卡`);
         
-        isWaitingForCardPick = true;
+        // 触发牌堆散开动画
+        triggerDeckAnimation(true);
+        
+        // 延迟一点让动画播放完再允许点击
+        setTimeout(() => {
+            isWaitingForCardPick = true;
+        }, deckAnimationDuration);
 
     } else if (tile.type === 'jail') {
         player.jailCount = (player.jailCount || 0) + 1;
@@ -1530,6 +1541,22 @@ const cardGeo = new THREE.PlaneGeometry(cardWidth, cardHeight);
 const cardFrontMat = new THREE.MeshStandardMaterial({ color: 0xffd700, side: THREE.FrontSide });
 const cardBackMat = new THREE.MeshStandardMaterial({ color: 0x1e90ff, side: THREE.FrontSide });
 
+// 卡片动画状态
+let isWaitingForCardPick = false;
+let selectedCard = null;
+let isCardFlipping = false;
+let isCardFaceUp = false; 
+let cardFlipStartTime = 0;
+const cardFlipDuration = 600; 
+let cardStartRotationX = 0;
+let cardTargetRotationX = 0;
+
+// 洗牌/散开动画状态
+let isDeckAnimating = false;
+let deckAnimationStartTime = 0;
+const deckAnimationDuration = 800; // 散开/收回动画时长
+let isDeckSpread = false; // 当前牌堆是否是散开状态
+
 for (let i = 0; i < 20; i++) {
     const singleCardGroup = new THREE.Group();
     
@@ -1543,23 +1570,63 @@ for (let i = 0; i < 20; i++) {
     singleCardGroup.add(cardFront);
     singleCardGroup.add(cardBack);
     
-    // 排列成 5x4 的网格
-    const row = Math.floor(i / 5);
-    const col = i % 5;
-    // 居中偏移
-    singleCardGroup.position.set((col - 2) * 5, 0, (row - 1.5) * 7);
+    // 初始状态：叠在一起，稍微错开 Y 轴避免深度冲突
+    singleCardGroup.position.set(0, i * 0.05, 0);
     
     // 初始面朝下 (Front 朝 -Y)
     singleCardGroup.rotation.x = Math.PI / 2; 
     
-    singleCardGroup.userData = { isCard: true, id: i };
+    singleCardGroup.userData = { 
+        isCard: true, 
+        id: i,
+        stackedPos: new THREE.Vector3(0, i * 0.05, 0), // 叠放位置
+        spreadPos: new THREE.Vector3() // 稍后计算散开位置
+    };
+    
     cards.push(singleCardGroup);
     cardDeckGroup.add(singleCardGroup);
 }
 
-// 放在棋盘中心稍微偏上，并向Z轴正方向平移，以避开原点的骰子
-cardDeckGroup.position.set(0, 3.1, 10); 
+// 放在棋盘中心偏上，作为牌堆
+cardDeckGroup.position.set(0, 3.1, 0); 
 scene.add(cardDeckGroup);
+
+// 打乱卡片并计算散开的位置
+function shuffleAndCalculateSpreadPositions() {
+    // 随机打乱 0-19 的索引
+    const indices = Array.from({length: 20}, (_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    
+    // 将打乱后的位置分配给卡片，避开中心骰子区域
+    for (let i = 0; i < 20; i++) {
+        const shuffledIndex = indices[i];
+        const row = Math.floor(shuffledIndex / 5); // 4行
+        const col = shuffledIndex % 5;             // 5列
+        
+        // 增加行距和列距，并且整体向 Z 轴正向偏移，避开原点
+        // X: -10, -5, 0, 5, 10
+        // Z: 5, 12, 19, 26 (远离原点0)
+        cards[i].userData.spreadPos.set(
+            (col - 2) * 5, 
+            0, 
+            row * 7 + 5 
+        );
+    }
+}
+
+// 触发散开或收回动画
+function triggerDeckAnimation(spread) {
+    isDeckAnimating = true;
+    deckAnimationStartTime = performance.now();
+    isDeckSpread = spread;
+    
+    if (spread) {
+        shuffleAndCalculateSpreadPositions();
+    }
+}
 
 // 如果字体已经加载完，立即初始化背面文字
 if (typeof globalFont !== 'undefined' && globalFont) {
@@ -1809,6 +1876,28 @@ function animate() {
         });
     }
     
+    // 卡片散开/收回动画逻辑
+    if (isDeckAnimating) {
+        const now = performance.now();
+        const elapsed = now - deckAnimationStartTime;
+        let progress = elapsed / deckAnimationDuration; // 0 到 1
+        
+        if (progress >= 1) {
+            progress = 1;
+            isDeckAnimating = false;
+        }
+        
+        // easeInOutQuad
+        const easeProgress = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+        cards.forEach(card => {
+            const startPos = isDeckSpread ? card.userData.stackedPos : card.userData.spreadPos;
+            const targetPos = isDeckSpread ? card.userData.spreadPos : card.userData.stackedPos;
+            
+            card.position.lerpVectors(startPos, targetPos, easeProgress);
+        });
+    }
+
     // 卡片翻转动画逻辑
     if (isCardFlipping && selectedCard) {
         const now = performance.now();
