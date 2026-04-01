@@ -1137,7 +1137,7 @@ function onPlayerLand(player, tile) {
     
     if (tile.type === 'start') {
         player.money += 2000;
-        eventEl.innerText = `🎁 ${player.name} 经过/到达起点，获得 2000 金币！`;
+        eventEl.innerText = `🎁 ${player.name} 停在起点，获得 2000 金币！`;
         console.log(`[事件] ${player.name} 获得 2000 金币`);
         eventEl.style.display = 'block';
         updateUI();
@@ -1147,25 +1147,28 @@ function onPlayerLand(player, tile) {
         if (!tile.owner) {
             // 无人空地
             console.log(`[事件] 提示购买：${tile.name}，价格：$${tile.price}`);
-            // 使用 confirm() 实现购买提示
-            const wantsToBuy = confirm(`是否花费 $${tile.price} 购买 ${tile.name}？`);
-            if (wantsToBuy) {
-                if (player.money >= tile.price) {
-                    player.money -= tile.price;
-                    tile.owner = player;
-                    tile.level = 0;
-                    player.properties.push(tile);
-                    addHouseToCell(tile, player.colorHex, tile.level);
-                    console.log(`[事件] ${player.name} 花费 $${tile.price} 购买了 ${tile.name}`);
+            
+            // 延迟一下，等待玩家模型走过去
+            setTimeout(() => {
+                const wantsToBuy = confirm(`是否花费 $${tile.price} 购买 ${tile.name}？`);
+                if (wantsToBuy) {
+                    if (player.money >= tile.price) {
+                        player.money -= tile.price;
+                        tile.owner = player;
+                        tile.level = 0;
+                        player.properties.push(tile);
+                        addHouseToCell(tile, player.colorHex, tile.level);
+                        console.log(`[事件] ${player.name} 花费 $${tile.price} 购买了 ${tile.name}`);
+                    } else {
+                        alert("金币不足，无法购买！");
+                        console.log(`[事件] ${player.name} 金币不足，购买失败`);
+                    }
                 } else {
-                    alert("金币不足，无法购买！");
-                    console.log(`[事件] ${player.name} 金币不足，购买失败`);
+                    console.log(`[事件] ${player.name} 放弃购买 ${tile.name}`);
                 }
-            } else {
-                console.log(`[事件] ${player.name} 放弃购买 ${tile.name}`);
-            }
-            updateUI();
-            endTurn();
+                updateUI();
+                endTurn();
+            }, 50);
 
         } else if (tile.owner === player) {
             // 自己的地
@@ -1683,13 +1686,6 @@ function animate() {
             // 一步走完
             currentPlayer.currentIndex = (currentPlayer.currentIndex + 1) % pathPositions.length;
             playerMoveProgress = 0;
-            
-            // 如果经过了起点 (index 0) 并且还没到达终点（如果刚好到达起点，则由 onPlayerLand 触发奖励）
-            if (currentPlayer.currentIndex === 0 && currentPlayer.currentIndex !== playerTargetIndex) {
-                currentPlayer.money += 2000;
-                console.log(`[事件] 玩家 ${currentPlayer.id} 经过起点，获得 2000 金币！`);
-                updateStatusUI();
-            }
 
             if (currentPlayer.currentIndex === playerTargetIndex) {
                 // 已经到达目标格子，停止移动
