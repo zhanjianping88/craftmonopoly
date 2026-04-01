@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 大富翁 - 我的世界风格</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* 隐藏滚动条 */
+            background-color: #87CEEB; /* 天空蓝背景 */
+            font-family: sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 游戏初始化/大厅界面 -->
+    <div id="lobbyUI" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; color: white; font-family: sans-serif;">
+        <h1 style="color: #FFD700; font-size: 48px; text-shadow: 2px 2px 4px #000; margin-bottom: 20px;">3D 大富翁 (Minecraft Style)</h1>
+        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; text-align: center;">
+            <h2 style="margin-top: 0;">游戏设置</h2>
+            <div style="margin-bottom: 20px; font-size: 20px;">
+                <label for="playerCount">选择玩家人数 (2-10): </label>
+                <input type="number" id="playerCount" min="2" max="10" value="4" style="font-size: 20px; width: 60px; text-align: center; border-radius: 5px; border: none; padding: 5px;">
+            </div>
+            <button id="btnStartGame" style="padding: 15px 40px; font-size: 24px; font-weight: bold; background-color: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">开始游戏</button>
+        </div>
+    </div>
+
+    <!-- 游戏内主UI -->
+    <div id="gameUI" style="display: none;">
+        <div id="ui">
+            <h2>3D 大富翁 (Minecraft Style)</h2>
+            <p>左键旋转视角，右键平移，滚轮缩放</p>
+            <h3 id="turnText" style="color: #ff3333; text-shadow: 1px 1px 2px #000; font-size: 22px;">当前回合: 玩家 1</h3>
+            <button id="rollBtn" style="pointer-events: auto; padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); margin-top: 10px; font-weight: bold;">🎲 掷骰子</button>
+            <h3 id="resultText" style="color: #FFD700; text-shadow: 2px 2px 4px #000; display: none; margin-top: 15px; font-size: 24px;">点数: </h3>
+            <h3 id="eventText" style="color: #ffffff; background-color: rgba(0,0,0,0.6); padding: 10px; border-radius: 5px; display: none; margin-top: 15px; font-size: 20px;">事件: </h3>
+        </div>
+
+        <!-- 玩家资金状态栏 -->
+        <div id="statusUI" style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 8px; color: white; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; font-size: 16px; pointer-events: none; font-family: sans-serif; max-width: 80%;">
+            <!-- 动态生成 -->
+        </div>
+
+        <!-- 动作面板 (购买/升级) -->
+        <div id="actionPanel" style="display: none; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.8); padding: 20px; border-radius: 8px; color: white; text-align: center; pointer-events: auto; font-family: sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            <h3 id="actionText" style="margin-top: 0; margin-bottom: 15px; font-size: 20px;">是否购买？</h3>
+            <button id="btnBuy" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; border-radius: 4px; margin: 0 5px; font-size: 16px; font-weight: bold;">购买</button>
+            <button id="btnUpgrade" style="padding: 10px 20px; background: #2196F3; color: white; border: none; cursor: pointer; border-radius: 4px; margin: 0 5px; font-size: 16px; font-weight: bold; display: none;">升级</button>
+            <button id="btnSkip" style="padding: 10px 20px; background: #f44336; color: white; border: none; cursor: pointer; border-radius: 4px; margin: 0 5px; font-size: 16px; font-weight: bold;">跳过</button>
+        </div>
+
+        <!-- 资产管理面板按钮 -->
+        <button id="btnManageAssets" style="position: absolute; bottom: 20px; right: 20px; padding: 12px 24px; background: #9C27B0; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; pointer-events: auto; box-shadow: 2px 2px 8px rgba(0,0,0,0.4);">🏦 管理资产 / 卖房</button>
+
+        <!-- 资产管理与交易弹窗 -->
+        <div id="assetsPanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(30,30,30,0.95); padding: 25px; border-radius: 10px; color: white; text-align: left; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); min-width: 450px; z-index: 100;">
+            <h2 id="assetsTitle" style="margin-top: 0; border-bottom: 2px solid #555; padding-bottom: 10px; color: #FFD700;">我的资产</h2>
+            <div id="assetsList" style="max-height: 250px; overflow-y: auto; margin-bottom: 20px;">
+                <!-- 动态生成的房产列表 -->
+            </div>
+            <div id="debtWarning" style="color: #ff5555; font-weight: bold; margin-bottom: 15px; display: none;">
+                ⚠️ 您当前负债，必须变卖资产直至资金为正才能继续游戏！
+            </div>
+            <div style="text-align: right;">
+                <button id="btnCloseAssets" style="padding: 8px 20px; background: #555; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">关闭</button>
+            </div>
+        </div>
+
+        <!-- 交易设置弹窗 -->
+        <div id="tradeSetupPanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(40,40,60,0.95); padding: 25px; border-radius: 10px; color: white; text-align: left; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 102; min-width: 300px;">
+            <h2 style="margin-top: 0; color: #2196F3; border-bottom: 1px solid #555; padding-bottom: 10px;">设置交易信息</h2>
+            <p id="tradeSetupDesc" style="font-size: 16px; margin-bottom: 15px;">你要出售的房产：</p>
+            
+            <div style="margin-bottom: 15px;">
+                <label for="tradeBuyerSelect" style="display: block; margin-bottom: 5px; color: #aaa;">选择买家：</label>
+                <select id="tradeBuyerSelect" style="width: 100%; padding: 8px; border-radius: 4px; background: #333; color: white; border: 1px solid #555; font-size: 16px;">
+                    <!-- 动态填充 -->
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label for="tradePriceInput" style="display: block; margin-bottom: 5px; color: #aaa;">输入价格 ($)：</label>
+                <input type="number" id="tradePriceInput" min="1" value="100" style="width: 100%; padding: 8px; border-radius: 4px; background: #333; color: white; border: 1px solid #555; font-size: 16px; box-sizing: border-box;">
+            </div>
+            
+            <div style="text-align: right; margin-top: 10px;">
+                <button id="btnCancelTradeSetup" style="padding: 8px 15px; background: #555; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-right: 10px;">取消</button>
+                <button id="btnConfirmTradeSetup" style="padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">发起交易</button>
+            </div>
+        </div>
+
+        <!-- 玩家交易请求弹窗 -->
+        <div id="tradePanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(50,20,20,0.95); padding: 25px; border-radius: 10px; color: white; text-align: center; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 101;">
+            <h2 style="margin-top: 0; color: #FF9800;">房产交易请求</h2>
+            <p id="tradeDesc" style="font-size: 18px; margin-bottom: 20px;">玩家 1 想要以 $500 卖给你 [空地 3]</p>
+            <button id="btnAcceptTrade" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-right: 10px; font-weight: bold;">同意购买</button>
+            <button id="btnRejectTrade" style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">拒绝</button>
+        </div>
+
+        <!-- 皮肤选择 UI -->
+        <div id="skinUI" style="position: absolute; top: 10px; right: 10px; background-color: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; color: white; pointer-events: auto; font-family: sans-serif; max-height: 80vh; overflow-y: auto;">
+            <h3 style="margin-top: 0; text-align: center; border-bottom: 2px solid #555; padding-bottom: 5px;">更换皮肤</h3>
+            <!-- 桌面巨人选择 -->
+            <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #555;">
+                <label for="giantSkin" style="color: #ffaa00; font-weight: bold;">顶着棋盘的巨人:</label>
+                <select id="giantSkin" style="padding: 5px; border-radius: 4px; margin-top: 5px; width: 100%;">
+                    <option value="efe" selected>Efe</option>
+                    <option value="steve">Steve</option>
+                    <option value="alex">Alex</option>
+                    <option value="ari">Ari</option>
+                    <option value="kai">Kai</option>
+                    <option value="makena">Makena</option>
+                    <option value="noor">Noor</option>
+                    <option value="sunny">Sunny</option>
+                    <option value="zuri">Zuri</option>
+                </select>
+            </div>
+            
+            <div id="playerSkinsContainer">
+                <!-- 动态生成玩家皮肤下拉框 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Three.js 的 Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    
+    <!-- 加载主逻辑 -->
+    <script type="module" src="./main.js"></script>
+</body>
+</html>
