@@ -972,7 +972,13 @@ function endTurn() {
         const eventEl = document.getElementById('eventText');
         eventEl.innerText = msg;
         eventEl.style.display = 'block';
-        setTimeout(endTurn, 2000);
+        
+        // 关键修复：不要再次调用 endTurn()，而是更新状态并调用一个不会触发无限循环的函数
+        // 在这里我们需要重新寻找下一个玩家，相当于直接执行下一次回合切换
+        setTimeout(() => {
+            endTurn(); // 再次调用以切换到下一个玩家
+        }, 2000);
+        return; // 必须 return，防止当前函数的其余部分干扰
     }
 }
 
