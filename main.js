@@ -764,6 +764,43 @@ function updatePlayerSkin(playerGroup, skinName) {
     parts.rightLeg.material = materials.leg;
 }
 
+// 初始化大厅玩家皮肤选择
+function updateLobbySkins() {
+    const countInput = document.getElementById('playerCount');
+    let count = parseInt(countInput.value);
+    if (isNaN(count) || count < 2) count = 2;
+    if (count > 10) count = 10;
+    
+    const container = document.getElementById('lobbySkinsContainer');
+    container.innerHTML = '';
+    
+    for (let i = 0; i < count; i++) {
+        const config = playerConfigs[i % playerConfigs.length];
+        const div = document.createElement('div');
+        div.style.cssText = 'margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;';
+        div.innerHTML = `
+            <label for="lobbySkin${i}" style="color: ${config.colorHex}; font-weight: bold;">玩家 ${i + 1} (${config.colorName}):</label>
+            <select id="lobbySkin${i}" style="padding: 5px; border-radius: 4px; width: 120px; background: rgba(255,255,255,0.9);">
+                <option value="steve" ${config.skin === 'steve' ? 'selected' : ''}>Steve</option>
+                <option value="alex" ${config.skin === 'alex' ? 'selected' : ''}>Alex</option>
+                <option value="efe" ${config.skin === 'efe' ? 'selected' : ''}>Efe</option>
+                <option value="ari" ${config.skin === 'ari' ? 'selected' : ''}>Ari</option>
+                <option value="kai" ${config.skin === 'kai' ? 'selected' : ''}>Kai</option>
+                <option value="makena" ${config.skin === 'makena' ? 'selected' : ''}>Makena</option>
+                <option value="noor" ${config.skin === 'noor' ? 'selected' : ''}>Noor</option>
+                <option value="sunny" ${config.skin === 'sunny' ? 'selected' : ''}>Sunny</option>
+                <option value="zuri" ${config.skin === 'zuri' ? 'selected' : ''}>Zuri</option>
+            </select>
+        `;
+        container.appendChild(div);
+    }
+}
+
+// 监听人数变化以更新大厅皮肤选择
+document.getElementById('playerCount').addEventListener('change', updateLobbySkins);
+// 初始调用一次
+updateLobbySkins();
+
 // 初始化游戏函数
 function initGame(playerCount) {
     // 清除可能存在的旧玩家
@@ -771,13 +808,16 @@ function initGame(playerCount) {
     players = [];
     
     const statusUI = document.getElementById('statusUI');
-    const skinContainer = document.getElementById('playerSkinsContainer');
     statusUI.innerHTML = '';
-    skinContainer.innerHTML = '';
 
     for (let i = 0; i < playerCount; i++) {
         const config = playerConfigs[i % playerConfigs.length];
-        const model = createPlayerModel(config.skin, config.hex);
+        
+        // 从大厅 UI 获取选中的皮肤，如果找不到则用默认的
+        const skinSelect = document.getElementById(`lobbySkin${i}`);
+        const selectedSkin = skinSelect ? skinSelect.value : config.skin;
+        
+        const model = createPlayerModel(selectedSkin, config.hex);
         scene.add(model);
 
         // 计算偏移量，让多个玩家在同一个格子上时分散开
@@ -811,31 +851,6 @@ function initGame(playerCount) {
         statusEl.style.color = player.colorHex;
         statusEl.style.fontWeight = 'bold';
         statusUI.appendChild(statusEl);
-
-        // 创建皮肤选择 UI
-        const skinDiv = document.createElement('div');
-        skinDiv.style.cssText = 'margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #555;';
-        skinDiv.innerHTML = `
-            <label for="p${player.id}Skin" style="color: ${player.colorHex};">玩家 ${player.id} 皮肤:</label>
-            <select id="p${player.id}Skin" style="padding: 5px; border-radius: 4px; margin-top: 5px; width: 100%;">
-                <option value="steve" ${config.skin === 'steve' ? 'selected' : ''}>Steve</option>
-                <option value="alex" ${config.skin === 'alex' ? 'selected' : ''}>Alex</option>
-                <option value="efe" ${config.skin === 'efe' ? 'selected' : ''}>Efe</option>
-                <option value="ari" ${config.skin === 'ari' ? 'selected' : ''}>Ari</option>
-                <option value="kai" ${config.skin === 'kai' ? 'selected' : ''}>Kai</option>
-                <option value="makena" ${config.skin === 'makena' ? 'selected' : ''}>Makena</option>
-                <option value="noor" ${config.skin === 'noor' ? 'selected' : ''}>Noor</option>
-                <option value="sunny" ${config.skin === 'sunny' ? 'selected' : ''}>Sunny</option>
-                <option value="zuri" ${config.skin === 'zuri' ? 'selected' : ''}>Zuri</option>
-            </select>
-        `;
-        skinContainer.appendChild(skinDiv);
-
-        // 绑定皮肤更换事件
-        document.getElementById(`p${player.id}Skin`).addEventListener('change', (e) => {
-            updatePlayerSkin(model, e.target.value);
-            console.log(`[系统] 玩家 ${player.id} 更换了皮肤: ${e.target.value}`);
-        });
     }
 
     currentPlayerTurn = 0;
