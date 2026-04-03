@@ -709,13 +709,15 @@ fontLoader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_bold.
         let price = 0;
         let rent = 0;
         if (type === 'property') {
-            // 调整价格，使其更接近真实大富翁（后期地块更贵）
-            // 索引 0-39，前十个在50-300，后面逐渐到上千
-            price = 100 + Math.floor(Math.pow(index, 1.4)) * 10;
+            // 调整价格，使其更接近真实大富翁（极大提高）
+            // 如果要在平原（游戏初期地块）买旅馆（地价 + 5 * 升级价 = 地价 + 5 * 0.5 * 地价 = 3.5倍地价）达到5500，
+            // 则地价大约需要 5500 / 3.5 ≈ 1571 金币。
+            // 我们让第一个地块的地价从 1500 起步，逐渐增加到 5000+
+            price = 1500 + Math.floor(Math.pow(index, 1.3)) * 60;
             // 调整基础租金，大约是地价的 10%
             rent = Math.floor(price * 0.1); 
         } else if (type === 'tax') {
-            price = 500; // 借用price字段存交税金额，调高税务
+            price = 2000; // 税务大幅调高
         }
 
         // 记录格子逻辑数据 (完全符合新要求)
@@ -913,7 +915,7 @@ function initGame(playerCount) {
             hex: config.hex,
             position: 0,
             currentIndex: 0,
-            money: 2000,
+            money: 30000, // 初始资金大幅提高
             properties: [],
             offset: { x: offsetX, z: offsetZ },
             jailTurns: 0,
@@ -1258,9 +1260,9 @@ function onPlayerLand(player, tile) {
     console.log(`[事件] ${player.name} 到达了格子: ${tile.name} (类型: ${tile.type})`);
     
     if (tile.type === 'start') {
-        player.money += 2000;
-        eventEl.innerText = `🎁 ${player.name} 停在起点，获得 2000 金币！`;
-        console.log(`[事件] ${player.name} 获得 2000 金币`);
+        player.money += 10000;
+        eventEl.innerText = `🎁 ${player.name} 停在起点，获得 10000 金币！`;
+        console.log(`[事件] ${player.name} 获得 10000 金币`);
         eventEl.style.display = 'block';
         updateUI();
         setTimeout(endTurn, 1500);
@@ -1295,7 +1297,7 @@ function onPlayerLand(player, tile) {
                 tile.rent * 15, 
                 tile.rent * 40, 
                 tile.rent * 60, 
-                hotelBuildPrice * 3
+                hotelBuildPrice * 2 // 旅馆租金 = 建旅馆需要的钱的两倍
             ];
             // level: -1(空地) -> index 0, level 0(1房) -> index 1, ... level 4(旅馆) -> index 5
             const rentIndex = Math.max(0, Math.min(rentArray.length - 1, tile.level + 1));
@@ -1809,7 +1811,7 @@ function showPropertyCard(player, tile) {
         tile.rent * 15, 
         tile.rent * 40, 
         tile.rent * 60, 
-        hotelBuildPrice * 3 // 旅馆租金 = 建旅馆需要的钱的3倍
+        hotelBuildPrice * 2 // 旅馆租金 = 建旅馆需要的钱的两倍
     ];
     
     document.getElementById('pcRent0').innerText = `$${rents[0] || 0}`;
