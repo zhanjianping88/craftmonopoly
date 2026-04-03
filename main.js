@@ -1494,59 +1494,6 @@ let rollResult2 = 1;
 let rollTotal = 2;
 let slerpStarted = false;
 
-// 创作者调试模式状态
-let nextDiceOverride = null; // null 表示不覆盖，数字表示覆盖的点数
-
-// --- 绑定调试面板事件 ---
-document.getElementById('btnOpenDebug').addEventListener('click', (e) => {
-    e.stopPropagation(); // 阻止事件冒泡，防止触发其他全局点击事件（如翻卡片、射线检测等）
-    document.getElementById('debugPanel').style.display = 'block';
-    document.getElementById('debugLoginView').style.display = 'block';
-    document.getElementById('debugControlView').style.display = 'none';
-    document.getElementById('debugPasswordInput').value = '';
-});
-
-document.getElementById('debugPanel').addEventListener('click', (e) => {
-    e.stopPropagation(); // 阻止在调试面板内部点击时冒泡到全局
-});
-
-document.getElementById('btnDebugCloseLogin').addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.getElementById('debugPanel').style.display = 'none';
-});
-
-document.getElementById('btnDebugCloseControl').addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.getElementById('debugPanel').style.display = 'none';
-    document.getElementById('debugStatusText').style.display = 'none';
-});
-
-document.getElementById('btnDebugLogin').addEventListener('click', () => {
-    const pwd = document.getElementById('debugPasswordInput').value;
-    if (pwd === '00000000000') {
-        document.getElementById('debugLoginView').style.display = 'none';
-        document.getElementById('debugControlView').style.display = 'block';
-    } else {
-        alert('密码错误！');
-    }
-});
-
-document.getElementById('btnSetDebugDice').addEventListener('click', () => {
-    const val = parseInt(document.getElementById('debugDiceInput').value);
-    if (!isNaN(val) && val >= 2 && val <= 12) {
-        nextDiceOverride = val;
-        const statusText = document.getElementById('debugStatusText');
-        statusText.innerText = `已覆盖下一次骰子结果为：${val} ！`;
-        statusText.style.display = 'block';
-        
-        setTimeout(() => {
-            statusText.style.display = 'none';
-        }, 3000);
-    } else {
-        alert('请输入 2 到 12 之间的有效数字！');
-    }
-});
-
 const targetQuaternion1 = new THREE.Quaternion();
 const targetQuaternion2 = new THREE.Quaternion();
 const startQuaternion1 = new THREE.Quaternion();
@@ -1578,25 +1525,10 @@ document.getElementById('rollBtn').addEventListener('click', () => {
     slerpStarted = false;
     rollStartTime = performance.now();
     
-    if (nextDiceOverride !== null) {
-        // 如果启用了创作者调试覆盖
-        console.log(`[调试模式] 强制指定骰子总数为: ${nextDiceOverride}`);
-        rollTotal = nextDiceOverride;
-        // 拆分总数到两个骰子上 (1-6)
-        if (rollTotal > 7) {
-            rollResult1 = 6;
-            rollResult2 = rollTotal - 6;
-        } else {
-            rollResult1 = rollTotal - 1;
-            rollResult2 = 1;
-        }
-        nextDiceOverride = null; // 用完即作废
-    } else {
-        // 正常随机
-        rollResult1 = Math.floor(Math.random() * 6) + 1;
-        rollResult2 = Math.floor(Math.random() * 6) + 1;
-        rollTotal = rollResult1 + rollResult2;
-    }
+    // 正常随机掷骰子
+    rollResult1 = Math.floor(Math.random() * 6) + 1;
+    rollResult2 = Math.floor(Math.random() * 6) + 1;
+    rollTotal = rollResult1 + rollResult2;
     
     // 隐藏上次的文字结果
     document.getElementById('resultText').style.display = 'none';
