@@ -915,7 +915,7 @@ function initGame(playerCount) {
             hex: config.hex,
             position: 0,
             currentIndex: 0,
-            money: 30000, // 初始资金大幅提高
+            money: 4000, // 初始资金设为4000，打工人的起始资金
             properties: [],
             offset: { x: offsetX, z: offsetZ },
             jailTurns: 0,
