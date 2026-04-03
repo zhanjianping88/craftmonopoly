@@ -958,6 +958,7 @@ let movingToVec = new THREE.Vector3();
 function updateAllPlayersPosition() {
     players.forEach(p => {
         const pos = pathPositions[p.currentIndex];
+        if (!pos) return; // 防御性检查，确保 pos 存在
         // 加上偏移量防止两个棋子重叠在一起。人物脚底在Y=0，格子表面Y是在 pathPositions 里面算好的 (y=2)
         p.group.position.set(pos.x + p.offset.x, pos.y, pos.z + p.offset.z);
         // 让玩家面向棋盘中心
