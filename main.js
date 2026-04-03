@@ -1510,11 +1510,13 @@ document.getElementById('debugPanel').addEventListener('click', (e) => {
     e.stopPropagation(); // 阻止在调试面板内部点击时冒泡到全局
 });
 
-document.getElementById('btnDebugCloseLogin').addEventListener('click', () => {
+document.getElementById('btnDebugCloseLogin').addEventListener('click', (e) => {
+    e.stopPropagation();
     document.getElementById('debugPanel').style.display = 'none';
 });
 
-document.getElementById('btnDebugCloseControl').addEventListener('click', () => {
+document.getElementById('btnDebugCloseControl').addEventListener('click', (e) => {
+    e.stopPropagation();
     document.getElementById('debugPanel').style.display = 'none';
     document.getElementById('debugStatusText').style.display = 'none';
 });
