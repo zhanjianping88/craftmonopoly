@@ -1498,11 +1498,16 @@ let slerpStarted = false;
 let nextDiceOverride = null; // null 表示不覆盖，数字表示覆盖的点数
 
 // --- 绑定调试面板事件 ---
-document.getElementById('btnOpenDebug').addEventListener('click', () => {
+document.getElementById('btnOpenDebug').addEventListener('click', (e) => {
+    e.stopPropagation(); // 阻止事件冒泡，防止触发其他全局点击事件（如翻卡片、射线检测等）
     document.getElementById('debugPanel').style.display = 'block';
     document.getElementById('debugLoginView').style.display = 'block';
     document.getElementById('debugControlView').style.display = 'none';
     document.getElementById('debugPasswordInput').value = '';
+});
+
+document.getElementById('debugPanel').addEventListener('click', (e) => {
+    e.stopPropagation(); // 阻止在调试面板内部点击时冒泡到全局
 });
 
 document.getElementById('btnDebugCloseLogin').addEventListener('click', () => {
