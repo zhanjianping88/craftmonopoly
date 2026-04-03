@@ -571,7 +571,8 @@ let globalFont = null;
 
 // 加载字体
 const fontLoader = new FontLoader();
-fontLoader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', function (font) {
+// 使用 jsdelivr CDN 加载字体，避免 unpkg 超时
+fontLoader.load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', function (font) {
     globalFont = font; // 保存到全局
     
     // 初始化所有卡片的背面文字
