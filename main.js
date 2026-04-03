@@ -279,7 +279,13 @@ function openAssetsPanel(player, forceDebtMode = false) {
             
             const info = document.createElement('div');
             // 计算投入的总成本：地价 + 升级费(每次是地价一半)
-            const totalCost = cell.price + (cell.level * cell.price * 0.5);
+            let extraCost = 0;
+            if (cell.level >= 0 && cell.level <= 3) {
+                extraCost = (cell.level + 1) * (cell.price * 0.5);
+            } else if (cell.level === 4) {
+                extraCost = 5 * (cell.price * 0.5);
+            }
+            const totalCost = cell.price + extraCost;
             // 卖给银行是半价
             const bankPrice = totalCost * 0.5;
             
@@ -703,10 +709,13 @@ fontLoader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_bold.
         let price = 0;
         let rent = 0;
         if (type === 'property') {
-            price = 50 + index * 10;
-            rent = Math.floor(price * 0.2); // 基础租金为价格的20%
+            // 调整价格，使其更接近真实大富翁（后期地块更贵）
+            // 索引 0-39，前十个在50-300，后面逐渐到上千
+            price = 100 + Math.floor(Math.pow(index, 1.4)) * 10;
+            // 调整基础租金，大约是地价的 10%
+            rent = Math.floor(price * 0.1); 
         } else if (type === 'tax') {
-            price = 200; // 借用price字段存交税金额
+            price = 500; // 借用price字段存交税金额，调高税务
         }
 
         // 记录格子逻辑数据 (完全符合新要求)
@@ -1009,26 +1018,36 @@ function endTurn() {
     }
     
     // 破产检查
-    let anyoneBankrupt = false;
+    let activePlayers = 0;
     for (let p of players) {
-        // 如果 checkBankruptcy 返回 true 表示真的破产了；
-        // 如果它打开了变卖面板，那么当前回合挂起，不应继续往下走 endTurn 逻辑。
-        // 这里我们需要一个机制：如果是变卖中，我们中止 endTurn
         if (p.money < 0 && !p.isBankrupt) {
-            checkBankruptcy(p);
-            return; // 中止回合结束流程，等待玩家卖房
+            const isReallyBankrupt = checkBankruptcy(p);
+            if (!isReallyBankrupt) {
+                // 尚未破产，正在变卖，中止回合切换
+                return;
+            }
         }
-        if (p.isBankrupt) anyoneBankrupt = true;
+        if (!p.isBankrupt) {
+            activePlayers++;
+        }
     }
     
-    // 检查是否有人真正破产，如果有，就不再继续回合
-    if (anyoneBankrupt) {
-        return;
+    // 检查游戏是否结束 (只剩一人)
+    if (activePlayers <= 1) {
+        const winner = players.find(p => !p.isBankrupt);
+        alert(`游戏结束！玩家 ${winner.id} (${winner.colorName}) 获得了最终胜利！`);
+        return; // 终止循环
     }
 
     // 切换回合 (跳过已破产的玩家)
+    let loopCount = 0;
     do {
         currentPlayerTurn = (currentPlayerTurn + 1) % players.length;
+        loopCount++;
+        if (loopCount > players.length * 2) {
+            console.error("无法找到下一个活动玩家！");
+            return;
+        }
     } while (players[currentPlayerTurn].isBankrupt);
 
     const nextPlayer = players[currentPlayerTurn];
@@ -1056,9 +1075,12 @@ function endTurn() {
 }
 
 function addHouseToCell(cell, colorHex, level) {
+    // level: -1 (空地无建筑), 0 (1栋), 1 (2栋), 2 (3栋), 3 (4栋), 4 (旅馆)
+    if (level < 0) return;
+
     // 每次升级前，清除旧的房子（如果想要替换为大建筑的话）
-    // 但为了大富翁经典感觉，1-3级我们建小房子，满级(3级)我们建一个大旅馆
-    if (level === 3) {
+    // 1-4级建小房子，满级(4级)建一个大旅馆
+    if (level >= 4) {
         // 满级：清除之前的小房子
         const toRemove = [];
         cell.mesh.children.forEach(child => {
@@ -1071,41 +1093,61 @@ function addHouseToCell(cell, colorHex, level) {
         hotelGroup.userData.isHouse = true;
 
         let bodyMatColor = colorHex;
-        let roofMatColor = 0x333333;
+        let roofMatColor = 0xff0000; // 默认红色屋顶，类似大富翁经典旅馆
         
         if (cell.biome === 'snow') {
-            roofMatColor = 0xffffff; // 雪原：白雪屋顶
+            roofMatColor = 0x88ccff; // 雪原：冰蓝色屋顶
         } else if (cell.biome === 'desert') {
-            bodyMatColor = 0xeedd82; // 沙漠：沙岩色主体
-            roofMatColor = 0xd2b48c; // 沙漠：平顶沙色
+            bodyMatColor = 0xffe4b5; // 沙漠：沙岩色主体
+            roofMatColor = 0x8b4513; // 沙漠：棕色屋顶
         } else if (cell.biome === 'taiga') {
-            roofMatColor = 0x2f4f4f; // 针叶林：深绿色屋顶
+            roofMatColor = 0x8b0000; // 针叶林：深红色屋顶
         }
 
-        // 旅馆主体
-        const bodyGeo = new THREE.BoxGeometry(2.4, 2.5, 2.4);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: bodyMatColor, roughness: 0.8 });
+        // 旅馆主体 (两层楼的别墅造型)
+        const bodyGeo = new THREE.BoxGeometry(3.0, 2.0, 2.0);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: bodyMatColor, roughness: 0.7 });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         body.add(new THREE.LineSegments(new THREE.EdgesGeometry(bodyGeo), new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 })));
-        body.position.y = 1.25;
+        body.position.y = 1.0;
         body.castShadow = true;
         body.receiveShadow = true;
         hotelGroup.add(body);
+        
+        // 二楼主体 (稍小一圈)
+        const secondFloorGeo = new THREE.BoxGeometry(2.6, 1.5, 1.8);
+        const secondFloor = new THREE.Mesh(secondFloorGeo, bodyMat);
+        secondFloor.add(new THREE.LineSegments(new THREE.EdgesGeometry(secondFloorGeo), new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 })));
+        secondFloor.position.y = 2.0 + 0.75;
+        secondFloor.castShadow = true;
+        secondFloor.receiveShadow = true;
+        hotelGroup.add(secondFloor);
 
-        // 旅馆屋顶 (用平顶或者多层)
-        const roofGeo = new THREE.BoxGeometry(2.6, 0.4, 2.6);
-        const roofMat = new THREE.MeshStandardMaterial({ color: roofMatColor, roughness: 0.9 });
+        // 旅馆屋顶 (双坡斜顶)
+        const roofGeo = new THREE.ConeGeometry(2.2, 1.2, 4);
+        const roofMat = new THREE.MeshStandardMaterial({ color: roofMatColor, roughness: 0.8 });
         const roof = new THREE.Mesh(roofGeo, roofMat);
         roof.add(new THREE.LineSegments(new THREE.EdgesGeometry(roofGeo), new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 })));
-        roof.position.y = 2.5 + 0.2;
+        roof.position.y = 3.5 + 0.6;
+        roof.rotation.y = Math.PI / 4;
+        roof.scale.set(1, 1, 0.7); // 拉伸成矩形底面的斜顶
         roof.castShadow = true;
         hotelGroup.add(roof);
         
-        // 玩家标识（显示是谁的房子，因为有些群系可能改变了房子主色调）
-        const ownerIndicatorGeo = new THREE.BoxGeometry(1, 0.2, 1);
+        // 大门
+        const doorGeo = new THREE.BoxGeometry(0.8, 1.0, 0.2);
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+        const door = new THREE.Mesh(doorGeo, doorMat);
+        door.position.set(0, 0.5, 1.0);
+        hotelGroup.add(door);
+
+        // 玩家标识（在屋顶上方飘着一个小方块）
+        const ownerIndicatorGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
         const ownerIndicatorMat = new THREE.MeshBasicMaterial({ color: colorHex });
         const ownerIndicator = new THREE.Mesh(ownerIndicatorGeo, ownerIndicatorMat);
-        ownerIndicator.position.y = 2.5 + 0.4 + 0.1;
+        ownerIndicator.position.y = 5.5;
+        ownerIndicator.rotation.x = Math.PI / 4;
+        ownerIndicator.rotation.y = Math.PI / 4;
         hotelGroup.add(ownerIndicator);
 
         // 格子高度是6，中心在y=0，顶部是y=3
@@ -1113,7 +1155,7 @@ function addHouseToCell(cell, colorHex, level) {
         cell.mesh.add(hotelGroup);
 
     } else {
-        // 1-3 级：建造带有尖顶的小房子
+        // 1-4 级：建造带有尖顶的小房子
         const houseGroup = new THREE.Group();
         houseGroup.userData.isHouse = true;
         
@@ -1123,7 +1165,8 @@ function addHouseToCell(cell, colorHex, level) {
         const offsetMap = [
             {x: -1.5, z: -1.5}, // 第1栋 (level 0)
             {x: 1.5, z: -1.5},  // 第2栋 (level 1)
-            {x: -1.5, z: 1.5}   // 第3栋 (level 2)
+            {x: -1.5, z: 1.5},  // 第3栋 (level 2)
+            {x: 1.5, z: 1.5}    // 第4栋 (level 3)
         ];
         const pos = offsetMap[level] || {x:0, z:0};
         
@@ -1224,29 +1267,12 @@ function onPlayerLand(player, tile) {
 
     } else if (tile.type === 'property') {
         if (!tile.owner) {
-            // 无人空地
+            // 无人空地，触发购买卡片 UI
             console.log(`[事件] 提示购买：${tile.name}，价格：$${tile.price}`);
             
             // 延迟一下，等待玩家模型走过去
             setTimeout(() => {
-                const wantsToBuy = confirm(`是否花费 $${tile.price} 购买 ${tile.name}？`);
-                if (wantsToBuy) {
-                    if (player.money >= tile.price) {
-                        player.money -= tile.price;
-                        tile.owner = player;
-                        tile.level = 0;
-                        player.properties.push(tile);
-                        addHouseToCell(tile, player.colorHex, tile.level);
-                        console.log(`[事件] ${player.name} 花费 $${tile.price} 购买了 ${tile.name}`);
-                    } else {
-                        alert("金币不足，无法购买！");
-                        console.log(`[事件] ${player.name} 金币不足，购买失败`);
-                    }
-                } else {
-                    console.log(`[事件] ${player.name} 放弃购买 ${tile.name}`);
-                }
-                updateUI();
-                endTurn();
+                showPropertyCard(player, tile);
             }, 50);
 
         } else if (tile.owner === player) {
@@ -1259,7 +1285,22 @@ function onPlayerLand(player, tile) {
 
         } else {
             // 别人的地，付租金
-            const rent = tile.rent * (tile.level + 1); // 简单计算一下租金加成
+            const upgradePrice = tile.price * 0.5;
+            const hotelBuildPrice = upgradePrice * 5;
+            
+            const rentArray = Array.isArray(tile.rent) ? tile.rent : [
+                tile.rent, 
+                tile.rent * 2, 
+                tile.rent * 5, 
+                tile.rent * 15, 
+                tile.rent * 40, 
+                tile.rent * 60, 
+                hotelBuildPrice * 3
+            ];
+            // level: -1(空地) -> index 0, level 0(1房) -> index 1, ... level 4(旅馆) -> index 5
+            const rentIndex = Math.max(0, Math.min(rentArray.length - 1, tile.level + 1));
+            const rent = rentArray[rentIndex];
+
             player.money -= rent;
             tile.owner.money += rent;
             eventEl.innerText = `💸 ${player.name} 支付了 $${rent} 租金给 ${tile.owner.name}。`;
@@ -1298,24 +1339,17 @@ function onPlayerLand(player, tile) {
         setTimeout(() => {
             if (player.jailCount <= 2) {
                 const fine = Math.floor(Math.random() * 301) + 200; // 200 到 500 之间的随机数
-                console.log(`[事件] ${player.name} 第 ${player.jailCount} 次入狱，提示缴纳保释金：$${fine}`);
+                console.log(`[事件] ${player.name} 第 ${player.jailCount} 次入狱，需缴纳保释金：$${fine}`);
                 
-                const wantsToPay = confirm(`你被抓进警察局了！这是你第 ${player.jailCount} 次入狱。\n是否缴纳 $${fine} 保释金立即出狱？`);
-                if (wantsToPay) {
-                    if (player.money >= fine) {
-                        player.money -= fine;
-                        eventEl.innerText = `👮 ${player.name} 缴纳了 $${fine} 保释金，免于停赛！`;
-                        console.log(`[事件] ${player.name} 缴纳 $${fine} 保释金出狱`);
-                    } else {
-                        alert("金币不足，无法缴纳保释金！只能乖乖坐牢。");
-                        player.jailTurns = 2;
-                        eventEl.innerText = `👮 ${player.name} 金币不足，入狱停赛 2 回合。`;
-                        console.log(`[事件] ${player.name} 金币不足，入狱停赛 2 回合`);
-                    }
+                // 自动缴纳保释金逻辑 (不再弹窗 confirm)
+                if (player.money >= fine) {
+                    player.money -= fine;
+                    eventEl.innerText = `👮 ${player.name} 被抓进警察局！自动缴纳了 $${fine} 保释金，免于停赛！`;
+                    console.log(`[事件] ${player.name} 自动缴纳 $${fine} 保释金出狱`);
                 } else {
                     player.jailTurns = 2;
-                    eventEl.innerText = `👮 ${player.name} 拒绝缴纳保释金，入狱停赛 2 回合。`;
-                    console.log(`[事件] ${player.name} 拒绝缴纳保释金，入狱停赛 2 回合`);
+                    eventEl.innerText = `👮 ${player.name} 被抓进警察局！金币不足以缴纳保释金($${fine})，入狱停赛 2 回合。`;
+                    console.log(`[事件] ${player.name} 金币不足，入狱停赛 2 回合`);
                 }
             } else {
                 // 第三次及以上，不能保释
@@ -1339,27 +1373,18 @@ function onPlayerLand(player, tile) {
     }
 }
 
-// 绑定动作面板按钮事件
-document.getElementById('btnBuy').addEventListener('click', () => {
-    const player = players[currentPlayerTurn];
-    const cell = boardCells[player.currentIndex];
-    if (player.money >= cell.price) {
-        player.money -= cell.price;
-        cell.owner = player;
-        cell.level = 0; 
-        addHouseToCell(cell, player.colorHex, cell.level);
-        document.getElementById('actionPanel').style.display = 'none';
-        updateStatusUI();
-        console.log(`[事件] 玩家 ${player.id} 花费 $${cell.price} 购买了 ${cell.name}`);
-        endTurn();
-    } else {
-        alert("金币不足！");
-    }
-});
+// (旧版动作面板 btnBuy / btnSkip 的事件已移除，被 propertyCardUI 替代)
 
+// 绑定动作面板按钮事件 (只保留 btnUpgrade)
 document.getElementById('btnUpgrade').addEventListener('click', () => {
     const player = players[currentPlayerTurn];
     const cell = boardCells[player.currentIndex];
+    
+    if (cell.level >= 4) {
+        alert("该地块建筑已达到满级（旅馆），无法继续升级！");
+        return;
+    }
+    
     const upgPrice = cell.price * 0.5;
     if (player.money >= upgPrice) {
         player.money -= upgPrice;
@@ -1374,11 +1399,11 @@ document.getElementById('btnUpgrade').addEventListener('click', () => {
     }
 });
 
-document.getElementById('btnSkip').addEventListener('click', () => {
-    document.getElementById('actionPanel').style.display = 'none';
-    console.log(`[事件] 玩家跳过了操作`);
-    endTurn();
-});
+// document.getElementById('btnSkip').addEventListener('click', () => {
+//     document.getElementById('actionPanel').style.display = 'none';
+//     console.log(`[事件] 玩家跳过了操作`);
+//     endTurn();
+// });
 
 // --- 5.5 添加 3D 骰子 ---
 // 动态使用 Canvas 生成骰子的 6 个面贴图
@@ -1467,6 +1492,52 @@ let rollResult2 = 1;
 let rollTotal = 2;
 let slerpStarted = false;
 
+// 创作者调试模式状态
+let nextDiceOverride = null; // null 表示不覆盖，数字表示覆盖的点数
+
+// --- 绑定调试面板事件 ---
+document.getElementById('btnOpenDebug').addEventListener('click', () => {
+    document.getElementById('debugPanel').style.display = 'block';
+    document.getElementById('debugLoginView').style.display = 'block';
+    document.getElementById('debugControlView').style.display = 'none';
+    document.getElementById('debugPasswordInput').value = '';
+});
+
+document.getElementById('btnDebugCloseLogin').addEventListener('click', () => {
+    document.getElementById('debugPanel').style.display = 'none';
+});
+
+document.getElementById('btnDebugCloseControl').addEventListener('click', () => {
+    document.getElementById('debugPanel').style.display = 'none';
+    document.getElementById('debugStatusText').style.display = 'none';
+});
+
+document.getElementById('btnDebugLogin').addEventListener('click', () => {
+    const pwd = document.getElementById('debugPasswordInput').value;
+    if (pwd === '00000000000') {
+        document.getElementById('debugLoginView').style.display = 'none';
+        document.getElementById('debugControlView').style.display = 'block';
+    } else {
+        alert('密码错误！');
+    }
+});
+
+document.getElementById('btnSetDebugDice').addEventListener('click', () => {
+    const val = parseInt(document.getElementById('debugDiceInput').value);
+    if (!isNaN(val) && val >= 2 && val <= 12) {
+        nextDiceOverride = val;
+        const statusText = document.getElementById('debugStatusText');
+        statusText.innerText = `已覆盖下一次骰子结果为：${val} ！`;
+        statusText.style.display = 'block';
+        
+        setTimeout(() => {
+            statusText.style.display = 'none';
+        }, 3000);
+    } else {
+        alert('请输入 2 到 12 之间的有效数字！');
+    }
+});
+
 const targetQuaternion1 = new THREE.Quaternion();
 const targetQuaternion2 = new THREE.Quaternion();
 const startQuaternion1 = new THREE.Quaternion();
@@ -1498,15 +1569,29 @@ document.getElementById('rollBtn').addEventListener('click', () => {
     slerpStarted = false;
     rollStartTime = performance.now();
     
-    // 生成两个 1-6 的随机数
-    rollResult1 = Math.floor(Math.random() * 6) + 1;
-    rollResult2 = Math.floor(Math.random() * 6) + 1;
-    rollTotal = rollResult1 + rollResult2;
+    if (nextDiceOverride !== null) {
+        // 如果启用了创作者调试覆盖
+        console.log(`[调试模式] 强制指定骰子总数为: ${nextDiceOverride}`);
+        rollTotal = nextDiceOverride;
+        // 拆分总数到两个骰子上 (1-6)
+        if (rollTotal > 7) {
+            rollResult1 = 6;
+            rollResult2 = rollTotal - 6;
+        } else {
+            rollResult1 = rollTotal - 1;
+            rollResult2 = 1;
+        }
+        nextDiceOverride = null; // 用完即作废
+    } else {
+        // 正常随机
+        rollResult1 = Math.floor(Math.random() * 6) + 1;
+        rollResult2 = Math.floor(Math.random() * 6) + 1;
+        rollTotal = rollResult1 + rollResult2;
+    }
     
     // 隐藏上次的文字结果
     document.getElementById('resultText').style.display = 'none';
     document.getElementById('eventText').style.display = 'none';
-    document.getElementById('actionPanel').style.display = 'none';
     
     // 重置卡片选择状态
     isWaitingForCardPick = false;
@@ -1587,8 +1672,8 @@ for (let i = 0; i < 20; i++) {
     cardDeckGroup.add(singleCardGroup);
 }
 
-// 放在棋盘中心偏上，作为牌堆
-cardDeckGroup.position.set(0, 3.1, 0); 
+// 放在棋盘中心偏上，作为牌堆。整体向 X=-12, Z=12 偏移，避开原点的骰子
+cardDeckGroup.position.set(-12, 3.1, 12); 
 scene.add(cardDeckGroup);
 
 // 打乱卡片并计算散开的位置
@@ -1600,19 +1685,25 @@ function shuffleAndCalculateSpreadPositions() {
         [indices[i], indices[j]] = [indices[j], indices[i]];
     }
     
-    // 将打乱后的位置分配给卡片，避开中心骰子区域
+    // 将打乱后的位置分配给卡片，完全居中显示
     for (let i = 0; i < 20; i++) {
         const shuffledIndex = indices[i];
         const row = Math.floor(shuffledIndex / 5); // 4行
         const col = shuffledIndex % 5;             // 5列
         
-        // 增加行距和列距，并且整体向 Z 轴正向偏移，避开原点
-        // X: -10, -5, 0, 5, 10
-        // Z: 5, 12, 19, 26 (远离原点0)
+        // cardDeckGroup的全局位置是 (-12, 3.1, 12)
+        // 目标是把卡牌散开在棋盘正中心 (全局 X: 0, Z: 0)
+        // 转换到本地坐标：本地 X = 0 - (-12) = 12，本地 Z = 0 - 12 = -12
+        const localCenterX = 12;
+        const localCenterZ = -12;
+        
+        const spacingX = 4.2; // 列距
+        const spacingZ = 6.2; // 行距
+        
         cards[i].userData.spreadPos.set(
-            (col - 2) * 5, 
+            localCenterX + (col - 2) * spacingX, 
             0, 
-            row * 7 + 5 
+            localCenterZ + (row - 1.5) * spacingZ 
         );
     }
 }
@@ -1624,7 +1715,14 @@ function triggerDeckAnimation(spread) {
     isDeckSpread = spread;
     
     if (spread) {
+        // 散开时隐藏骰子
+        dice1.visible = false;
+        dice2.visible = false;
         shuffleAndCalculateSpreadPositions();
+    } else {
+        // 收回时恢复骰子显示
+        dice1.visible = true;
+        dice2.visible = true;
     }
 }
 
@@ -1679,16 +1777,160 @@ function updateSpecificCardText(cardGroupObj, frontTextStr, backTextStr) {
 }
 
 // 卡片动画状态
-let isWaitingForCardPick = false;
-let selectedCard = null;
-let isCardFlipping = false;
-let isCardFaceUp = false; // true表示正面朝上，false表示反面(深蓝色)朝上
-let cardFlipStartTime = 0;
-const cardFlipDuration = 600; // 翻转动画持续时间
-let cardStartRotationX = 0;
-let cardTargetRotationX = 0;
+// let isWaitingForCardPick = false; // 已在上面声明，避免重复
+// let selectedCard = null;
+// let isCardFlipping = false;
+// let isCardFaceUp = false; 
+// let cardFlipStartTime = 0;
+// const cardFlipDuration = 600; 
+// let cardStartRotationX = 0;
+// let cardTargetRotationX = 0;
 
-// --- 5.7 射线检测(Raycaster)用于点击卡片 ---
+// --- 5.8 房产卡片 HTML UI 控制 ---
+let pendingBuyPlayer = null;
+let pendingBuyTile = null;
+
+function showPropertyCard(player, tile) {
+    pendingBuyPlayer = player;
+    pendingBuyTile = tile;
+
+    // 动态填充数据
+    document.getElementById('pcTitle').innerText = tile.name;
+    document.getElementById('pcPrompt').innerText = `是否购买【${tile.name}】？`;
+    
+    // 如果 tile 包含租金数组（假设最多到酒店）
+    const upgradePrice = tile.price * 0.5; // 房子的单价
+    const hotelBuildPrice = upgradePrice * 5; // 建旅馆的总价
+    
+    const rents = Array.isArray(tile.rent) ? tile.rent : [
+        tile.rent, 
+        tile.rent * 2, 
+        tile.rent * 5, 
+        tile.rent * 15, 
+        tile.rent * 40, 
+        tile.rent * 60, 
+        hotelBuildPrice * 3 // 旅馆租金 = 建旅馆需要的钱的3倍
+    ];
+    
+    document.getElementById('pcRent0').innerText = `$${rents[0] || 0}`;
+    document.getElementById('pcRent1').innerText = `$${rents[1] || 0}`;
+    document.getElementById('pcRent2').innerText = `$${rents[2] || 0}`;
+    document.getElementById('pcRent3').innerText = `$${rents[3] || 0}`;
+    document.getElementById('pcRent4').innerText = `$${rents[4] || 0}`;
+    document.getElementById('pcRent5').innerText = `$${rents[5] || 0}`;
+    document.getElementById('pcRent6').innerText = `$${rents[6] || 0}`;
+
+    // 假设升级价格是买价的一半，酒店是升级价的5倍
+    document.getElementById('pcHousePrice').innerText = `$${upgradePrice}/个`;
+    document.getElementById('pcHotelPrice').innerText = `$${hotelBuildPrice}`;
+
+    // 监听下拉框选择，动态更新按钮总价
+    const selectEl = document.getElementById('pcBuildingSelect');
+    selectEl.value = "0"; // 默认选中"买地 + 1个房子"
+    document.getElementById('pcBtnBuy').innerText = `购买 ($${tile.price + upgradePrice})`;
+
+    selectEl.onchange = () => {
+        const levelChoice = parseInt(selectEl.value, 10);
+        let extraCost = 0;
+        if (levelChoice >= 0 && levelChoice <= 3) {
+            extraCost = (levelChoice + 1) * upgradePrice; // 1-4个房子
+        } else if (levelChoice === 4) {
+            extraCost = 5 * upgradePrice; // 旅馆
+        }
+        const totalCost = tile.price + extraCost;
+        document.getElementById('pcBtnBuy').innerText = `购买 ($${totalCost})`;
+    };
+
+    // 显示并执行弹出动画
+    const ui = document.getElementById('propertyCardUI');
+    ui.style.display = 'flex';
+    // 强制重绘，确保 transition 生效
+    void ui.offsetWidth;
+    ui.style.opacity = '1';
+    ui.style.transform = 'translate(-50%, -50%) scale(1)';
+}
+
+function hidePropertyCard(callback) {
+    const ui = document.getElementById('propertyCardUI');
+    
+    // 执行关闭动画
+    ui.style.opacity = '0';
+    ui.style.transform = 'translate(-50%, -50%) scale(0.8)';
+    
+    // 动画结束后隐藏并回调
+    setTimeout(() => {
+        ui.style.display = 'none';
+        if (callback) callback();
+    }, 300); // 300ms 与 CSS transition 一致
+}
+
+// 绑定卡片按钮事件
+document.getElementById('pcBtnBuy').addEventListener('click', () => {
+    if (!pendingBuyPlayer || !pendingBuyTile) return;
+    
+    const player = pendingBuyPlayer;
+    const tile = pendingBuyTile;
+    
+    // 获取选择的等级：-1(空地), 0(1房) ~ 4(旅馆)
+    const levelChoice = parseInt(document.getElementById('pcBuildingSelect').value, 10);
+    const upgradePrice = tile.price * 0.5;
+    
+    let extraCost = 0;
+    if (levelChoice >= 0 && levelChoice <= 3) {
+        extraCost = (levelChoice + 1) * upgradePrice;
+    } else if (levelChoice === 4) {
+        extraCost = 5 * upgradePrice;
+    }
+    
+    const totalCost = tile.price + extraCost;
+    
+    if (player.money >= totalCost) {
+        player.money -= totalCost;
+        tile.owner = player;
+        tile.level = levelChoice; // 设置等级 (-1为无建筑)
+        player.properties.push(tile);
+        
+        // 如果买了建筑，从0循环建到目标等级，或者直接用 addHouseToCell (我们目前的逻辑可以多次调用或者直接到对应等级？)
+        // 我们的 addHouseToCell 只要调用一次即可，如果直接传 level，会造出对应的房屋数（因为里面直接判断并放置了）
+        // 等等，1-4级的 offsetMap 逻辑是“覆盖”，其实它只添加第 N 栋房子！
+        // 如果我直接调用 levelChoice = 2，它只会在第三个位置放一栋房子！
+        // 所以我需要循环调用！
+        if (levelChoice === 4) {
+            // 旅馆，它会自动清除之前的小房子，直接建旅馆
+            addHouseToCell(tile, player.colorHex, 4);
+        } else if (levelChoice >= 0) {
+            // 建多个小房子，必须逐个添加
+            for (let l = 0; l <= levelChoice; l++) {
+                addHouseToCell(tile, player.colorHex, l);
+            }
+        }
+
+        console.log(`[事件] ${player.name} 花费 $${totalCost} 购买了 ${tile.name} (建筑等级: ${levelChoice})`);
+        
+        hidePropertyCard(() => {
+            updateUI();
+            endTurn();
+        });
+    } else {
+        alert(`金币不足！需要 $${totalCost}`);
+        console.log(`[事件] ${player.name} 金币不足，购买失败`);
+        hidePropertyCard(() => {
+            updateUI();
+            endTurn();
+        });
+    }
+});
+
+document.getElementById('pcBtnCancel').addEventListener('click', () => {
+    if (!pendingBuyPlayer || !pendingBuyTile) return;
+    
+    console.log(`[事件] ${pendingBuyPlayer.name} 放弃购买 ${pendingBuyTile.name}`);
+    hidePropertyCard(() => {
+        updateUI();
+        endTurn();
+    });
+});
+
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
@@ -1701,6 +1943,8 @@ window.addEventListener('click', (event) => {
     raycaster.setFromCamera(mouse, camera);
 
     // 计算物体和射线的交点
+    
+    // 2. 检测机会卡点击
     if (isWaitingForCardPick && !isCardFlipping) {
         // 查找所有卡片组中的网格
         const intersects = raycaster.intersectObjects(cardDeckGroup.children, true);
@@ -1733,12 +1977,12 @@ window.addEventListener('click', (event) => {
     }
 });
 
-
 // 6. 添加轨道控制器（允许用户旋转、平移、缩放，提升体验）
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; // 阻尼感
 controls.maxPolarAngle = Math.PI / 2 - 0.05; // 限制视角不能钻到桌子底下
 controls.panSpeed = 2.0; // 提高平移速度，默认是1.0
+controls.zoomSpeed = 3.0; // 调高鼠标滚轮缩放速度，默认是1.0
 
 // 7. 动画循环
 function animate() {
