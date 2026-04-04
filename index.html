@@ -191,6 +191,14 @@
             <div id="debugControlView" style="display: none;">
                 <p style="margin-bottom: 15px; color: #FFD700; font-weight: bold;">身份验证成功！</p>
                 
+                <!-- 选择玩家 -->
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
+                    <label for="debugPlayerSelect" style="display: block; margin-bottom: 10px; font-size: 16px;">选择目标玩家：</label>
+                    <select id="debugPlayerSelect" style="width: 100%; padding: 8px; border-radius: 5px; background: #333; color: white; border: 1px solid #555;">
+                        <!-- 动态填充 -->
+                    </select>
+                </div>
+
                 <!-- 功能区 1：控制骰子 -->
                 <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
                     <label for="debugDiceInput" style="display: block; margin-bottom: 10px; font-size: 16px;">设置下一次骰子点数 (2-12)：</label>
@@ -200,12 +208,12 @@
                     </div>
                 </div>
 
-                <!-- 功能区 2：扣玩家钱 -->
+                <!-- 功能区 2：修改玩家钱 -->
                 <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
-                    <label for="debugMoneyInput" style="display: block; margin-bottom: 10px; font-size: 16px;">扣除当前玩家金币：</label>
+                    <label for="debugMoneyInput" style="display: block; margin-bottom: 10px; font-size: 16px;">修改玩家金币 (正数为加，负数为减)：</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="number" id="debugMoneyInput" min="0" value="1000" style="padding: 8px; font-size: 16px; border-radius: 5px; border: none; width: 80px; text-align: center;">
-                        <button id="btnSetDebugMoney" style="padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1;">确认扣除</button>
+                        <input type="number" id="debugMoneyInput" value="1000" style="padding: 8px; font-size: 16px; border-radius: 5px; border: none; width: 80px; text-align: center;">
+                        <button id="btnSetDebugMoney" style="padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1;">确认修改</button>
                     </div>
                 </div>
 
