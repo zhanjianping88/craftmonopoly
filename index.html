@@ -46,7 +46,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div style="flex: 1; text-align: left; padding-right: 20px;">
                     <label for="currentSkinSelect" style="display: block; margin-bottom: 10px; font-size: 18px;">选择皮肤模型:</label>
-                    <select id="currentSkinSelect" style="width: 100%; padding: 10px; font-size: 18px; border-radius: 5px;">
+                    <select id="currentSkinSelect" style="width: 100%; padding: 10px; font-size: 18px; border-radius: 5px; margin-bottom: 15px;">
                         <option value="steve">Steve</option>
                         <option value="alex">Alex</option>
                         <option value="efe">Efe</option>
@@ -57,6 +57,13 @@
                         <option value="sunny">Sunny</option>
                         <option value="zuri">Zuri</option>
                     </select>
+
+                    <label for="playerTypeSelect" style="display: block; margin-bottom: 10px; font-size: 18px;">玩家类型:</label>
+                    <select id="playerTypeSelect" style="width: 100%; padding: 10px; font-size: 18px; border-radius: 5px;">
+                        <option value="human">人类玩家</option>
+                        <option value="ai">AI 电脑</option>
+                    </select>
+
                     <p style="color: #aaa; font-size: 14px; margin-top: 15px;">提示: 可以在右侧 3D 视图中用鼠标拖拽旋转预览模型。</p>
                 </div>
                 
@@ -73,32 +80,60 @@
         </div>
     </div>
 
-    <!-- 游戏内主UI -->
-    <div id="gameUI" style="display: none;">
-        <div id="ui">
-            <h2>3D 大富翁 (Minecraft Style)</h2>
-            <p>左键旋转视角，右键平移，滚轮缩放</p>
-            <h3 id="turnText" style="color: #ff3333; text-shadow: 1px 1px 2px #000; font-size: 22px;">当前回合: 玩家 1</h3>
-            <button id="rollBtn" style="pointer-events: auto; padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); margin-top: 10px; font-weight: bold;">🎲 掷骰子</button>
-            <h3 id="resultText" style="color: #FFD700; text-shadow: 2px 2px 4px #000; display: none; margin-top: 15px; font-size: 24px;">点数: </h3>
-            <h3 id="eventText" style="color: #ffffff; background-color: rgba(0,0,0,0.6); padding: 10px; border-radius: 5px; display: none; margin-top: 15px; font-size: 20px;">事件: </h3>
-        </div>
+    <!-- 音效与飘字容器 -->
+    <div id="floating-texts" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000;"></div>
 
-        <!-- 玩家资金状态栏 -->
-        <div id="statusUI" style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 8px; color: white; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; font-size: 16px; pointer-events: none; font-family: sans-serif; max-width: 80%;">
+    <!-- 游戏内主UI -->
+    <div id="gameUI" style="display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;">
+        <!-- 左上：玩家信息 -->
+        <div id="statusUI" style="position: absolute; top: 20px; left: 20px; background-color: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; color: white; display: flex; flex-direction: column; gap: 10px; font-size: 16px; font-family: sans-serif; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); min-width: 200px; pointer-events: auto;">
+            <h3 style="margin: 0 0 10px 0; border-bottom: 1px solid #555; padding-bottom: 5px;">玩家状态</h3>
             <!-- 动态生成 -->
         </div>
 
-        <!-- 动作面板 (购买/升级) -->
-        <div id="actionPanel" style="display: none; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.8); padding: 20px; border-radius: 8px; color: white; text-align: center; pointer-events: auto; font-family: sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-            <h3 id="actionText" style="margin-top: 0; margin-bottom: 15px; font-size: 20px;">是否购买？</h3>
-            <button id="btnBuy" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; border-radius: 4px; margin: 0 5px; font-size: 16px; font-weight: bold;">购买</button>
-            <button id="btnUpgrade" style="padding: 10px 20px; background: #2196F3; color: white; border: none; cursor: pointer; border-radius: 4px; margin: 0 5px; font-size: 16px; font-weight: bold; display: none;">升级</button>
-            <button id="btnSkip" style="padding: 10px 20px; background: #f44336; color: white; border: none; cursor: pointer; border-radius: 4px; margin: 0 5px; font-size: 16px; font-weight: bold;">跳过</button>
+        <!-- 上方：当前回合与控制 -->
+        <div id="topCenterUI" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none;">
+            <h2 style="margin: 0; text-shadow: 2px 2px 4px #000; color: white;">3D 大富翁</h2>
+            <h3 id="turnText" style="color: #ff3333; text-shadow: 1px 1px 2px #000; font-size: 24px; margin: 10px 0; background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 20px; display: inline-block;">当前回合: 玩家 1</h3>
+            <br>
+            <button id="rollBtn" style="pointer-events: auto; padding: 12px 30px; font-size: 20px; cursor: pointer; background-color: #4CAF50; color: white; border: 2px solid #388E3C; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-top: 10px; font-weight: bold; transition: transform 0.1s;">🎲 掷骰子</button>
+            <h3 id="resultText" style="color: #FFD700; text-shadow: 2px 2px 4px #000; display: none; margin-top: 15px; font-size: 24px; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px;">点数: </h3>
+            <h3 id="eventText" style="color: #ffffff; background-color: rgba(0,0,0,0.8); padding: 15px 25px; border-radius: 8px; display: none; margin-top: 15px; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid #555;">事件: </h3>
         </div>
 
-        <!-- 资产管理面板按钮 -->
-        <button id="btnManageAssets" style="position: absolute; bottom: 20px; right: 20px; padding: 12px 24px; background: #9C27B0; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; pointer-events: auto; box-shadow: 2px 2px 8px rgba(0,0,0,0.4);">🏦 管理资产 / 卖房</button>
+        <!-- 右侧：设置与管理 -->
+        <div id="rightUI" style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px; align-items: flex-end; pointer-events: auto;">
+            <button id="btnManageAssets" style="padding: 12px 24px; background: #9C27B0; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 2px 2px 8px rgba(0,0,0,0.4); transition: transform 0.1s;">🏦 资产管理</button>
+            
+            <div id="skinUI" style="background-color: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; color: white; font-family: sans-serif; box-shadow: 2px 2px 10px rgba(0,0,0,0.5);">
+                <h3 style="margin-top: 0; text-align: center; border-bottom: 1px solid #555; padding-bottom: 5px; font-size: 16px;">环境设置</h3>
+                <div style="margin-bottom: 10px;">
+                    <label for="giantSkin" style="color: #ffaa00; font-size: 14px;">桌面巨人:</label>
+                    <select id="giantSkin" style="padding: 5px; border-radius: 4px; margin-top: 5px; width: 100%; background: #333; color: white; border: 1px solid #555;">
+                    <option value="efe" selected>Efe</option>
+                    <option value="steve">Steve</option>
+                    <option value="alex">Alex</option>
+                    <option value="ari">Ari</option>
+                    <option value="kai">Kai</option>
+                    <option value="makena">Makena</option>
+                    <option value="noor">Noor</option>
+                    <option value="sunny">Sunny</option>
+                    <option value="zuri">Zuri</option>
+                </select>
+            </div>
+            
+            <div id="playerSkinsContainer" style="display: none;">
+                <!-- 游戏内不再生成玩家皮肤下拉框，隐藏此容器以防残留逻辑报错 -->
+            </div>
+            
+            <!-- 创作者调试入口 -->
+            <div style="margin-top: 10px; text-align: center; pointer-events: auto;">
+                <button id="btnOpenDebug" style="background: rgba(255,255,255,0.8); border: 2px solid #333; color: #333; padding: 8px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">⚙️ 调试面板</button>
+            </div>
+        </div>
+        <!-- 结束 #skinUI -->
+        </div>
+        <!-- 结束 #rightUI -->
 
         <!-- 资产管理与交易弹窗 -->
         <div id="assetsPanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(30,30,30,0.95); padding: 25px; border-radius: 10px; color: white; text-align: left; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); min-width: 450px; z-index: 100;">
@@ -145,33 +180,12 @@
             <button id="btnRejectTrade" style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">拒绝</button>
         </div>
 
-        <!-- 皮肤选择 UI (游戏中仅显示巨人皮肤) -->
-        <div id="skinUI" style="position: absolute; top: 10px; right: 10px; background-color: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; color: white; pointer-events: auto; font-family: sans-serif; max-height: 80vh; overflow-y: auto;">
-            <h3 style="margin-top: 0; text-align: center; border-bottom: 2px solid #555; padding-bottom: 5px;">环境设置</h3>
-            <!-- 桌面巨人选择 -->
-            <div style="margin-bottom: 15px; padding-bottom: 10px;">
-                <label for="giantSkin" style="color: #ffaa00; font-weight: bold;">顶着棋盘的巨人:</label>
-                <select id="giantSkin" style="padding: 5px; border-radius: 4px; margin-top: 5px; width: 100%;">
-                    <option value="efe" selected>Efe</option>
-                    <option value="steve">Steve</option>
-                    <option value="alex">Alex</option>
-                    <option value="ari">Ari</option>
-                    <option value="kai">Kai</option>
-                    <option value="makena">Makena</option>
-                    <option value="noor">Noor</option>
-                    <option value="sunny">Sunny</option>
-                    <option value="zuri">Zuri</option>
-                </select>
-            </div>
-            
-            <div id="playerSkinsContainer" style="display: none;">
-                <!-- 游戏内不再生成玩家皮肤下拉框，隐藏此容器以防残留逻辑报错 -->
-            </div>
-            
-            <!-- 创作者调试入口 -->
-            <div style="margin-top: 10px; text-align: center; pointer-events: auto;">
-                <button id="btnOpenDebug" style="background: rgba(255,255,255,0.8); border: 2px solid #333; color: #333; padding: 8px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">⚙️ 调试面板</button>
-            </div>
+        <!-- 监狱选项弹窗 -->
+        <div id="jailPanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(40,40,40,0.95); padding: 25px; border-radius: 10px; color: white; text-align: center; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 103;">
+            <h2 style="margin-top: 0; color: #f44336;">👮 你被抓进了警察局！</h2>
+            <p id="jailDesc" style="font-size: 18px; margin-bottom: 20px;">是否花费 $500 缴纳保释金以继续游戏？<br>(取消则入狱停赛 2 回合)</p>
+            <button id="btnPayBail" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-right: 10px; font-weight: bold;">缴纳保释金</button>
+            <button id="btnGoToJail" style="padding: 10px 20px; background: #555; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">认罚入狱</button>
         </div>
 
         <!-- 创作者调试面板 -->
