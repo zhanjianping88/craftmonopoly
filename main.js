@@ -386,13 +386,13 @@ function openAssetsPanel(player, forceDebtMode = false) {
     const btnClose = document.getElementById('btnCloseAssets');
     
     isDebtMode = forceDebtMode;
-    title.innerText = `玩家 ${player.id} 的资产`;
+    title.innerText = `Player ${player.id} Assets`;
     list.innerHTML = '';
     
     const ownedCells = boardCells.filter(c => c.owner === player);
     
     if (ownedCells.length === 0) {
-        list.innerHTML = '<p style="color: #ccc;">暂无任何房产。</p>';
+        list.innerHTML = '<p style="color: #ccc;">No properties owned yet.</p>';
     } else {
         ownedCells.forEach(cell => {
             const div = document.createElement('div');
@@ -410,19 +410,19 @@ function openAssetsPanel(player, forceDebtMode = false) {
             // 卖给银行是半价
             const bankPrice = totalCost * 0.5;
             
-            info.innerHTML = `<strong>${cell.name}</strong> (等级: ${cell.level})<br><span style="font-size: 14px; color: #aaa;">总成本: $${totalCost}</span>`;
+            info.innerHTML = `<strong>${cell.name}</strong> (Level: ${cell.level})<br><span style="font-size: 14px; color: #aaa;">Total Cost: $${totalCost}</span>`;
             
             const btns = document.createElement('div');
             
             // 卖给银行按钮
             const btnBank = document.createElement('button');
-            btnBank.innerText = `卖给银行 ($${bankPrice})`;
+            btnBank.innerText = `Sell to Bank ($${bankPrice})`;
             btnBank.style.cssText = 'padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 5px;';
             btnBank.onclick = () => sellToBank(player, cell, bankPrice);
             
             // 卖给玩家按钮 (如果在负债强制模式下，为了简单可以禁用，或者允许。这里我们允许)
             const btnPlayer = document.createElement('button');
-            btnPlayer.innerText = '卖给其他玩家';
+            btnPlayer.innerText = 'Sell to Another Player';
             btnPlayer.style.cssText = 'padding: 5px 10px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 5px;';
             btnPlayer.onclick = () => initiateTrade(player, cell);
             
@@ -433,7 +433,7 @@ function openAssetsPanel(player, forceDebtMode = false) {
                 // Wait, getHouseUpgradeCost 的逻辑是: 1x, 2x, 4x, 8x, 16x. 但是我们在 onPlayerLand/btnUpgrade 用的是 baseHouseCost * 5 升旅馆，升小房是 baseHouseCost.
                 // 让我统一逻辑：升一级小房 = baseHouseCost, 升旅馆 = baseHouseCost * 5.
                 const cost = cell.level < 3 ? Math.floor(cell.price * 0.3) : Math.floor(cell.price * 0.3) * 5;
-                btnBuild.innerText = `建房 ($${cost})`;
+                btnBuild.innerText = `Build ($${cost})`;
                 btnBuild.style.cssText = 'padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer;';
                 btnBuild.onclick = () => {
                     if (player.money >= cost) {
@@ -444,11 +444,11 @@ function openAssetsPanel(player, forceDebtMode = false) {
                         showFloatingText(`-${cost}`, "#f44336", player.group.position);
                         openAssetsPanel(player, isDebtMode); // 刷新
                     } else {
-                        alert("金币不足！");
+                        alert("Not enough cash!");
                     }
                 };
             } else {
-                btnBuild.innerText = '满级';
+                btnBuild.innerText = 'Maxed Out';
                 btnBuild.disabled = true;
                 btnBuild.style.cssText = 'padding: 5px 10px; background: #555; color: white; border: none; border-radius: 3px; cursor: not-allowed;';
             }
@@ -492,7 +492,7 @@ function openAssetsPanel(player, forceDebtMode = false) {
                 // 成功还清债务
                 isDebtMode = false;
                 closeAssetsPanel();
-                alert(`[AI] ${player.name} 债务已还清！`);
+                alert(`[AI] ${player.name} has cleared the debt!`);
                 endTurn();
             }
         }
@@ -529,7 +529,7 @@ function sellToBank(player, cell, price) {
     if (isDebtMode && player.money >= 0) {
         isDebtMode = false;
         closeAssetsPanel();
-        alert(`债务已还清！`);
+        alert(`Debt cleared!`);
         endTurn(); // 恢复回合结束流程
     } else if (isDebtMode && player.money < 0 && boardCells.filter(c => c.owner === player).length === 0) {
         // 房子卖光了还是负债，真破产了
@@ -545,7 +545,7 @@ function initiateTrade(seller, cell) {
     // 过滤掉自己和已破产的玩家
     const validBuyers = players.filter(p => p.id !== seller.id && !p.isBankrupt);
     if (validBuyers.length === 0) {
-        alert("没有其他玩家可以交易！");
+        alert("No other players are available to trade!");
         return;
     }
 
@@ -555,7 +555,7 @@ function initiateTrade(seller, cell) {
     document.getElementById('assetsPanel').style.display = 'none';
     
     const setupPanel = document.getElementById('tradeSetupPanel');
-    document.getElementById('tradeSetupDesc').innerText = `你要出售的房产：[${cell.name}] (等级 ${cell.level})`;
+    document.getElementById('tradeSetupDesc').innerText = `Property for sale: [${cell.name}] (Level ${cell.level})`;
     
     // 填充下拉框
     const select = document.getElementById('tradeBuyerSelect');
@@ -563,7 +563,7 @@ function initiateTrade(seller, cell) {
     validBuyers.forEach(p => {
         const option = document.createElement('option');
         option.value = p.id;
-        option.innerText = `玩家 ${p.id} (资金: $${p.money})`;
+        option.innerText = `Player ${p.id} (Cash: $${p.money})`;
         select.appendChild(option);
     });
     
@@ -587,7 +587,7 @@ document.getElementById('btnConfirmTradeSetup').addEventListener('click', () => 
     const price = parseInt(document.getElementById('tradePriceInput').value);
     
     if (isNaN(price) || price <= 0) {
-        alert("请输入有效的金额！");
+        alert("Enter a valid price!");
         return;
     }
     
@@ -595,7 +595,7 @@ document.getElementById('btnConfirmTradeSetup').addEventListener('click', () => 
     if (!buyer) return;
     
     if (buyer.money < price) {
-        alert(`玩家 ${buyer.id} 的钱不够支付这个价格！(对方资金: $${buyer.money})`);
+        alert(`Player ${buyer.id} does not have enough cash for this deal! (Cash: $${buyer.money})`);
         return;
     }
     
@@ -608,7 +608,7 @@ document.getElementById('btnConfirmTradeSetup').addEventListener('click', () => 
     tradeOffer = { seller, buyer, cell, price };
     
     const tradePanel = document.getElementById('tradePanel');
-    document.getElementById('tradeDesc').innerText = `玩家 ${seller.id} 想要以 $${price} 将 [${cell.name}] (等级 ${cell.level}) 卖给你！`;
+    document.getElementById('tradeDesc').innerText = `Player ${seller.id} wants to sell you [${cell.name}] (Level ${cell.level}) for $${price}.`;
     tradePanel.style.display = 'block';
 });
 
@@ -644,7 +644,7 @@ document.getElementById('btnAcceptTrade').addEventListener('click', () => {
     if (isDebtMode) {
         if (seller.money >= 0) {
             isDebtMode = false;
-            alert(`交易成功！债务已还清！`);
+            alert(`Trade successful! Debt cleared!`);
             endTurn();
         } else {
             openAssetsPanel(seller, true);
@@ -657,7 +657,7 @@ document.getElementById('btnAcceptTrade').addEventListener('click', () => {
 document.getElementById('btnRejectTrade').addEventListener('click', () => {
     document.getElementById('tradePanel').style.display = 'none';
     tradeOffer = null;
-    alert("对方拒绝了你的交易请求。");
+    alert("The other player rejected your trade offer.");
     // 恢复卖家面板
     openAssetsPanel(players[currentPlayerTurn], isDebtMode);
 });
@@ -757,15 +757,15 @@ gridCoords.forEach((coord, index) => {
         // 每条边除去两端角，中间有 8 个格子。
         // 角落：0, 9, 18, 27
         let biomeKey = 'plains';
-        let biomeName = '平原';
+        let biomeName = 'Plains';
         if (index > 0 && index < 9) {
-            biomeKey = 'plains'; biomeName = '平原';
+            biomeKey = 'plains'; biomeName = 'Plains';
         } else if (index > 9 && index < 18) {
-            biomeKey = 'desert'; biomeName = '沙漠';
+            biomeKey = 'desert'; biomeName = 'Desert';
         } else if (index > 18 && index < 27) {
-            biomeKey = 'taiga'; biomeName = '针叶林';
+            biomeKey = 'taiga'; biomeName = 'Taiga';
         } else if (index > 27 && index < 36) {
-            biomeKey = 'snow'; biomeName = '雪原';
+            biomeKey = 'snow'; biomeName = 'Snowfield';
         }
         
         // 如果是偶数格子，用石头材质增加纹理变化，奇数格子用群系材质
@@ -784,23 +784,23 @@ gridCoords.forEach((coord, index) => {
         if (index === 0) {
             currentMat = matGold;
             type = 'start';
-            name = '起点';
+            name = 'Start';
         } else if (index === 18) {
             currentMat = matJail;
             type = 'jail';
-            name = '警察局(入狱)';
+            name = 'Police Station';
         } else if (index === 9 || index === 27) {
             currentMat = matGold;
             type = 'corner';
-            name = '休息区';
+            name = 'Lounge';
         } else if (index === 4 || index === 22) { // 每边中间位置作为机会
             currentMat = matChance;
             type = 'card';
-            name = '机会卡';
+            name = 'Chance';
         } else if (index === 14 || index === 32) { // 每边中间位置作为交税
             currentMat = matStone;
             type = 'tax';
-            name = '交税';
+            name = 'Tax';
         }
 
         const posX = i * blockSize - offset;
@@ -911,16 +911,16 @@ gridCoords.forEach((coord, index) => {
 
 // --- 5.2 玩家配置 ---
 const playerConfigs = [
-    { skin: 'steve', colorName: '红色', colorHex: '#ff3333', hex: 0xff3333 },
-    { skin: 'alex', colorName: '蓝色', colorHex: '#3333ff', hex: 0x3333ff },
-    { skin: 'ari', colorName: '绿色', colorHex: '#33ff33', hex: 0x33ff33 },
-    { skin: 'efe', colorName: '黄色', colorHex: '#ffff33', hex: 0xffff33 },
-    { skin: 'kai', colorName: '紫色', colorHex: '#ff33ff', hex: 0xff33ff },
-    { skin: 'makena', colorName: '青色', colorHex: '#33ffff', hex: 0x33ffff },
-    { skin: 'noor', colorName: '橙色', colorHex: '#ff8800', hex: 0xff8800 },
-    { skin: 'sunny', colorName: '粉色', colorHex: '#ff8888', hex: 0xff8888 },
-    { skin: 'zuri', colorName: '棕色', colorHex: '#8B4513', hex: 0x8B4513 },
-    { skin: 'steve', colorName: '灰色', colorHex: '#888888', hex: 0x888888 }
+    { skin: 'steve', colorName: 'Red', colorHex: '#ff3333', hex: 0xff3333 },
+    { skin: 'alex', colorName: 'Blue', colorHex: '#3333ff', hex: 0x3333ff },
+    { skin: 'ari', colorName: 'Green', colorHex: '#33ff33', hex: 0x33ff33 },
+    { skin: 'efe', colorName: 'Yellow', colorHex: '#ffff33', hex: 0xffff33 },
+    { skin: 'kai', colorName: 'Purple', colorHex: '#ff33ff', hex: 0xff33ff },
+    { skin: 'makena', colorName: 'Cyan', colorHex: '#33ffff', hex: 0x33ffff },
+    { skin: 'noor', colorName: 'Orange', colorHex: '#ff8800', hex: 0xff8800 },
+    { skin: 'sunny', colorName: 'Pink', colorHex: '#ff8888', hex: 0xff8888 },
+    { skin: 'zuri', colorName: 'Brown', colorHex: '#8B4513', hex: 0x8B4513 },
+    { skin: 'steve', colorName: 'Gray', colorHex: '#888888', hex: 0x888888 }
 ];
 
 let players = [];
@@ -1003,7 +1003,7 @@ document.getElementById('btnNextPhase').addEventListener('click', () => {
 function updateSkinSelectUI() {
     const config = playerConfigs[currentSetupPlayerIndex % playerConfigs.length];
     
-    document.getElementById('skinSelectTitle').innerText = `玩家 ${currentSetupPlayerIndex + 1} 皮肤选择`;
+    document.getElementById('skinSelectTitle').innerText = `Player ${currentSetupPlayerIndex + 1} Setup`;
     document.getElementById('skinSelectTitle').style.color = config.colorHex;
     
     const selectEl = document.getElementById('currentSkinSelect');
@@ -1025,10 +1025,10 @@ function updateSkinSelectUI() {
     
     const nextBtn = document.getElementById('btnNextPlayer');
     if (currentSetupPlayerIndex === totalSetupPlayers - 1) {
-        nextBtn.innerText = '开始游戏!';
+        nextBtn.innerText = 'Launch Match';
         nextBtn.style.backgroundColor = '#FF9800';
     } else {
-        nextBtn.innerText = '下一个玩家';
+        nextBtn.innerText = 'Review Next Player';
         nextBtn.style.backgroundColor = '#4CAF50';
     }
 }
@@ -1094,7 +1094,7 @@ function initGame(playerCount) {
 
         const player = {
             id: i + 1,
-            name: `玩家 ${i + 1}`,
+            name: `Player ${i + 1}`,
             isAI: selectedPlayerTypes[i] === 'ai',
             group: model,
             colorName: config.colorName,
@@ -1126,7 +1126,7 @@ function initGame(playerCount) {
     // 初始化回合显示
     const firstPlayer = players[0];
     const turnEl = document.getElementById('turnText');
-    turnEl.innerText = `当前回合: 玩家 ${firstPlayer.id} (${firstPlayer.colorName})`;
+    turnEl.innerText = `Current Turn: Player ${firstPlayer.id} (${firstPlayer.colorName})`;
     turnEl.style.color = firstPlayer.colorHex;
     
     if (firstPlayer.isAI) {
@@ -1163,7 +1163,7 @@ function updateUI() {
     players.forEach(p => {
         const statusEl = document.getElementById(`p${p.id}Status`);
         if (statusEl) {
-            statusEl.innerText = `${p.name}${p.isAI ? '(AI)' : ''}: $${p.money}${p.isBankrupt ? ' (破产)' : ''}`;
+            statusEl.innerText = `${p.name}${p.isAI ? ' (AI)' : ''}: $${p.money}${p.isBankrupt ? ' (Bankrupt)' : ''}`;
         }
     });
 }
@@ -1221,7 +1221,7 @@ function checkBankruptcy(player) {
         const ownedCells = boardCells.filter(c => c.owner === player);
         if (ownedCells.length > 0) {
             // 还有房产，强制要求变卖
-            alert(`玩家 ${player.id}，你的资金为负（$${player.money}）！你必须变卖房产还债！`);
+            alert(`Player ${player.id}, your balance is negative ($${player.money})! You must sell property to repay your debt.`);
             openAssetsPanel(player, true);
             return false; // 尚未真正破产，只是在变卖阶段
         } else {
@@ -1229,7 +1229,7 @@ function checkBankruptcy(player) {
             player.isBankrupt = true;
             player.group.visible = false;
             
-            alert(`玩家 ${player.id} 破产了！游戏结束！`);
+            alert(`Player ${player.id} is bankrupt! Game over!`);
             console.log(`[系统] 玩家 ${player.id} 宣告破产，资产已被清空。`);
             updateStatusUI();
             return true;
@@ -1245,7 +1245,7 @@ function endTurn() {
     // 如果有被翻开的卡片，将其翻转回去并清除文字
     if (selectedCard && isCardFaceUp && !isCardFlipping) {
         selectedCard.rotation.x = Math.PI / 2; // 重新面朝下
-        updateSpecificCardText(selectedCard, "", "机会卡\nChance");
+        updateSpecificCardText(selectedCard, "", "Chance");
         selectedCard = null;
         isCardFaceUp = false;
     }
@@ -1273,7 +1273,7 @@ function endTurn() {
     // 检查游戏是否结束 (只剩一人)
     if (activePlayers <= 1) {
         const winner = players.find(p => !p.isBankrupt);
-        alert(`游戏结束！玩家 ${winner.id} (${winner.colorName}) 获得了最终胜利！`);
+        alert(`Game over! Player ${winner.id} (${winner.colorName}) wins the match!`);
         return; // 终止循环
     }
 
@@ -1283,21 +1283,21 @@ function endTurn() {
         currentPlayerTurn = (currentPlayerTurn + 1) % players.length;
         loopCount++;
         if (loopCount > players.length * 2) {
-            console.error("无法找到下一个活动玩家！");
+            console.error("Could not find the next active player.");
             return;
         }
     } while (players[currentPlayerTurn].isBankrupt);
 
     const nextPlayer = players[currentPlayerTurn];
     const turnEl = document.getElementById('turnText');
-    turnEl.innerText = `当前回合: 玩家 ${nextPlayer.id} (${nextPlayer.colorName})`;
+    turnEl.innerText = `Current Turn: Player ${nextPlayer.id} (${nextPlayer.colorName})`;
     turnEl.style.color = nextPlayer.colorHex;
     console.log(`[系统] 切换至玩家 ${nextPlayer.id} 的回合`);
     
     // 如果下个玩家在停赛/监狱中
     if (nextPlayer.jailTurns > 0) {
         nextPlayer.jailTurns -= 1;
-        const msg = `🚨 玩家 ${nextPlayer.id} 处于停赛状态，剩余 ${nextPlayer.jailTurns} 回合。跳过本回合！`;
+        const msg = `🚨 Player ${nextPlayer.id} is suspended for ${nextPlayer.jailTurns} more turn(s). Turn skipped!`;
         console.log(`[事件] ${msg}`);
         const eventEl = document.getElementById('eventText');
         eventEl.innerText = msg;
@@ -1498,7 +1498,7 @@ function checkMonopoly(player, group) {
     if (ownedByPlayer && !player.monopolies.includes(group)) {
         player.monopolies.push(group);
         // 飘字提示
-        showFloatingText("垄断完成！", player.colorHex, player.group.position);
+        showFloatingText("Monopoly!", player.colorHex, player.group.position);
         console.log(`[事件] ${player.name} 垄断了 ${group} 组地块，租金将翻倍！`);
     }
     return ownedByPlayer;
@@ -1569,7 +1569,7 @@ function onPlayerLand(player, tile) {
         AudioManager.playCoinSound(2000);
         showFloatingText("+2000", "#4CAF50", player.group.position);
         
-        eventEl.innerText = `🎁 ${player.name} 停在起点，获得 2000 金币！`;
+        eventEl.innerText = `🎁 ${player.name} landed on Start and earned 2000 coins!`;
         console.log(`[事件] ${player.name} 获得 2000 金币`);
         eventEl.style.display = 'block';
         updateUI();
@@ -1588,7 +1588,7 @@ function onPlayerLand(player, tile) {
         } else if (tile.owner === player) {
             // 自己的地
             console.log(`[事件] 这是 ${player.name} 的地`);
-            eventEl.innerText = `🏠 欢迎回到你的地盘：${tile.name}。`;
+            eventEl.innerText = `🏠 Welcome back to your property: ${tile.name}.`;
             eventEl.style.display = 'block';
             updateUI();
             setTimeout(endTurn, 1500);
@@ -1624,7 +1624,7 @@ function onPlayerLand(player, tile) {
             showFloatingText(`-${rent}`, "#f44336", player.group.position);
             showFloatingText(`+${rent}`, "#4CAF50", tile.owner.group.position);
             
-            eventEl.innerText = `💸 ${player.name} 支付了 $${rent} 租金给 ${tile.owner.name}。`;
+            eventEl.innerText = `💸 ${player.name} paid $${rent} rent to ${tile.owner.name}.`;
             eventEl.style.display = 'block';
             console.log(`[事件] ${player.name} 支付租金 $${rent} 给 ${tile.owner.name}`);
             updateUI();
@@ -1638,14 +1638,14 @@ function onPlayerLand(player, tile) {
         AudioManager.playCoinSound(-taxAmount);
         showFloatingText(`-${taxAmount}`, "#f44336", player.group.position);
         
-        eventEl.innerText = `💸 ${player.name} 缴纳了 ${taxAmount} 金币税款！`;
+        eventEl.innerText = `💸 ${player.name} paid ${taxAmount} coins in tax!`;
         eventEl.style.display = 'block';
         console.log(`[事件] ${player.name} 扣除 ${taxAmount} 金币交税`);
         updateUI();
         setTimeout(endTurn, 1500);
 
     } else if (tile.type === 'card') {
-        eventEl.innerText = `🃏 ${player.name} 抽到了机会卡！请在中间的牌堆中自选一张。`;
+        eventEl.innerText = `🃏 ${player.name} drew Chance! Pick a card from the center deck.`;
         eventEl.style.display = 'block';
         console.log(`[事件] ${player.name} 触发机会卡`);
         
@@ -1670,12 +1670,12 @@ function onPlayerLand(player, tile) {
                         isCardFaceUp = true;
                         
                         const chanceEffects = [
-                            { type: 'money', msg: "天降横财\n+1000!", amt: 1000 },
-                            { type: 'go_start', msg: "回到起点\n+2000!" },
-                            { type: 'pause', msg: "暂停行动\n停赛 2 回合", turns: 2 }
+                            { type: 'money', msg: "Lucky Windfall\n+1000!", amt: 1000 },
+                            { type: 'go_start', msg: "Return to Start\n+2000!" },
+                            { type: 'pause', msg: "Action Paused\nMiss 2 Turns", turns: 2 }
                         ];
                         pendingCardEffect = chanceEffects[Math.floor(Math.random() * chanceEffects.length)];
-                        updateSpecificCardText(selectedCard, pendingCardEffect.msg, "机会卡\nChance");
+                        updateSpecificCardText(selectedCard, pendingCardEffect.msg, "Chance");
                     }
                 }, deckAnimationDuration + 500);
             }
@@ -1686,7 +1686,7 @@ function onPlayerLand(player, tile) {
         
         // 稍微延迟，确保玩家棋子已经渲染在格子上
         setTimeout(() => {
-            eventEl.innerText = `👮 ${player.name} 被抓进警察局了！`;
+            eventEl.innerText = `👮 ${player.name} was sent to jail!`;
             eventEl.style.display = 'block';
             
             setTimeout(() => {
@@ -1696,7 +1696,7 @@ function onPlayerLand(player, tile) {
                     
                     // 使用 HTML Modal 替代 confirm
                     const jailPanel = document.getElementById('jailPanel');
-                    document.getElementById('jailDesc').innerHTML = `是否花费 $${fine} 缴纳保释金以继续游戏？<br>(取消则入狱停赛 2 回合)`;
+                    document.getElementById('jailDesc').innerHTML = `Pay $${fine} bail to continue playing?<br>(If not, you will miss 2 turns.)`;
                     
                     // 清除旧的事件监听器
                     const newBtnPay = document.getElementById('btnPayBail').cloneNode(true);
@@ -1712,12 +1712,12 @@ function onPlayerLand(player, tile) {
                             player.money -= fine;
                             AudioManager.playCoinSound(-fine);
                             showFloatingText(`-${fine}`, "#f44336", player.group.position);
-                            eventEl.innerText = `👮 ${player.name} 缴纳了 $${fine} 保释金，免于停赛！`;
+                            eventEl.innerText = `👮 ${player.name} paid $${fine} bail and avoided suspension!`;
                             console.log(`[事件] ${player.name} 缴纳 $${fine} 保释金出狱`);
                         } else {
-                            alert("金币不足，无法缴纳保释金！");
+                            alert("Not enough cash to pay bail!");
                             player.jailTurns = 2;
-                            eventEl.innerText = `👮 ${player.name} 入狱停赛 2 回合。`;
+                            eventEl.innerText = `👮 ${player.name} will miss 2 turns in jail.`;
                             console.log(`[事件] ${player.name} 入狱停赛 2 回合`);
                         }
                         updateUI();
@@ -1727,7 +1727,7 @@ function onPlayerLand(player, tile) {
                     newBtnGo.addEventListener('click', () => {
                         jailPanel.style.display = 'none';
                         player.jailTurns = 2;
-                        eventEl.innerText = `👮 ${player.name} 入狱停赛 2 回合。`;
+                        eventEl.innerText = `👮 ${player.name} will miss 2 turns in jail.`;
                         console.log(`[事件] ${player.name} 入狱停赛 2 回合`);
                         updateUI();
                         setTimeout(endTurn, 2000);
@@ -1739,7 +1739,7 @@ function onPlayerLand(player, tile) {
                 } else {
                     // 第三次及以上，不能保释
                     player.jailTurns = 2;
-                    eventEl.innerText = `👮 ${player.name} 已经是第 ${player.jailCount} 次进局子了，不准保释！停赛 2 回合。`;
+                    eventEl.innerText = `👮 ${player.name} has been jailed ${player.jailCount} times. No bail this time. Miss 2 turns.`;
                     console.log(`[事件] ${player.name} 第 ${player.jailCount} 次入狱，不可保释，停赛 2 回合`);
                     updateUI();
                     setTimeout(endTurn, 2000);
@@ -1752,7 +1752,7 @@ function onPlayerLand(player, tile) {
         AudioManager.playCoinSound(200);
         showFloatingText("+200", "#4CAF50", player.group.position);
         
-        eventEl.innerText = `🎁 ${player.name} 在休息区休息，获得 200 金币！`;
+        eventEl.innerText = `🎁 ${player.name} relaxed in the lounge and earned 200 coins!`;
         console.log(`[事件] ${player.name} 获得休息区奖励 200 金币`);
         eventEl.style.display = 'block';
         updateUI();
@@ -1876,7 +1876,7 @@ document.getElementById('btnOpenDebug').addEventListener('click', (e) => {
         players.forEach((p, index) => {
             const option = document.createElement('option');
             option.value = index;
-            option.innerText = `玩家 ${p.id} (${p.name})`;
+            option.innerText = `Player ${p.id} (${p.name})`;
             if (index === currentPlayerTurn) option.selected = true;
             playerSelect.appendChild(option);
         });
@@ -1912,7 +1912,7 @@ document.getElementById('btnDebugLogin').addEventListener('click', () => {
         document.getElementById('debugLoginView').style.display = 'none';
         document.getElementById('debugControlView').style.display = 'block';
     } else {
-        alert('密码错误！');
+        alert('Wrong password!');
     }
 });
 
@@ -1921,14 +1921,14 @@ document.getElementById('btnSetDebugDice').addEventListener('click', () => {
     if (!isNaN(val) && val >= 2 && val <= 12) {
         nextDiceOverride = val;
         const statusText = document.getElementById('debugStatusText');
-        statusText.innerText = `已覆盖下一次骰子结果为：${val} ！`;
+        statusText.innerText = `The next dice roll has been overridden to ${val}.`;
         statusText.style.display = 'block';
         
         setTimeout(() => {
             statusText.style.display = 'none';
         }, 3000);
     } else {
-        alert('请输入 2 到 12 之间的有效数字！');
+        alert('Enter a valid number between 2 and 12!');
     }
 });
 
@@ -1943,14 +1943,14 @@ document.getElementById('btnSetDebugMoney').addEventListener('click', () => {
         updateStatusUI(); // 更新顶部金币显示
         
         const statusText = document.getElementById('debugStatusText');
-        statusText.innerText = `已修改 ${targetPlayer.name} 的金币！变动: ${val > 0 ? '+' : ''}${val}，当前余额: ${targetPlayer.money}`;
+        statusText.innerText = `${targetPlayer.name}'s cash changed by ${val > 0 ? '+' : ''}${val}. Current balance: ${targetPlayer.money}`;
         statusText.style.display = 'block';
         
         setTimeout(() => {
             statusText.style.display = 'none';
         }, 3000);
     } else {
-        alert('请输入有效的数值和选择玩家！');
+        alert('Enter a valid amount and choose a player!');
     }
 });
 
@@ -2018,7 +2018,7 @@ document.getElementById('rollBtn').addEventListener('click', () => {
     // 如果有被翻开的卡片，将其翻转回去并清除文字
     if (selectedCard) {
         selectedCard.rotation.x = Math.PI / 2; // 重新面朝下
-        updateSpecificCardText(selectedCard, "", "机会卡\nChance");
+        updateSpecificCardText(selectedCard, "", "Chance");
         selectedCard = null;
     }
     
@@ -2090,7 +2090,7 @@ for (let i = 0; i < 20; i++) {
 }
 
 // 初始化所有卡片的背面文字
-cards.forEach(c => updateSpecificCardText(c, "", "机会卡\nChance"));
+cards.forEach(c => updateSpecificCardText(c, "", "Chance"));
 
 // 放在棋盘中心偏上，作为牌堆。整体向 X=-12, Z=12 偏移，避开原点的骰子
 cardDeckGroup.position.set(-12, 3.1, 12); 
@@ -2148,7 +2148,7 @@ function triggerDeckAnimation(spread) {
 
 // 如果字体已经加载完，立即初始化背面文字
 if (typeof globalFont !== 'undefined' && globalFont) {
-    cards.forEach(c => updateSpecificCardText(c, "", "机会卡\nChance"));
+    cards.forEach(c => updateSpecificCardText(c, "", "Chance"));
 }
 
 function updateSpecificCardText(cardGroupObj, frontTextStr, backTextStr) {
@@ -2212,7 +2212,7 @@ function showPropertyCard(player, tile) {
 
     // 动态填充数据
     document.getElementById('pcTitle').innerText = tile.name;
-    document.getElementById('pcPrompt').innerText = `是否购买【${tile.name}】？`;
+    document.getElementById('pcPrompt').innerText = `Do you want to buy [${tile.name}]?`;
     
     // 如果 tile 包含租金数组（假设最多到酒店）
     const upgradePrice = Math.floor(tile.price * 0.3); // 房子的单价调低
@@ -2237,13 +2237,13 @@ function showPropertyCard(player, tile) {
     document.getElementById('pcRent6').innerText = `$${rents[6] || 0}`;
 
     // 假设升级价格是买价的 30%，酒店是升级价的 5 倍
-    document.getElementById('pcHousePrice').innerText = `$${getHouseUpgradeCost(tile, 0)}/个`; // 显示第一栋房子的价格
+    document.getElementById('pcHousePrice').innerText = `$${getHouseUpgradeCost(tile, 0)} each`; // 显示第一栋房子的价格
     document.getElementById('pcHotelPrice').innerText = `$${getHouseUpgradeCost(tile, 4)}`; // 显示旅馆的价格
 
     // 监听下拉框选择，动态更新按钮总价
     const selectEl = document.getElementById('pcBuildingSelect');
     selectEl.value = "0"; // 默认选中"买地 + 1个房子"
-    document.getElementById('pcBtnBuy').innerText = `购买 ($${tile.price + upgradePrice})`;
+    document.getElementById('pcBtnBuy').innerText = `Buy ($${tile.price + upgradePrice})`;
 
     selectEl.onchange = () => {
         const levelChoice = parseInt(selectEl.value, 10);
@@ -2253,7 +2253,7 @@ function showPropertyCard(player, tile) {
             totalExtraCost += getHouseUpgradeCost(tile, i);
         }
         const totalCost = tile.price + totalExtraCost;
-        document.getElementById('pcBtnBuy').innerText = `购买 ($${totalCost})`;
+        document.getElementById('pcBtnBuy').innerText = `Buy ($${totalCost})`;
     };
 
     // 显示并执行弹出动画
@@ -2337,7 +2337,7 @@ document.getElementById('pcBtnBuy').addEventListener('click', () => {
             endTurn();
         });
     } else {
-        alert(`金币不足！需要 $${totalCost}`);
+        alert(`Not enough cash! You need $${totalCost}.`);
         console.log(`[事件] ${player.name} 金币不足，购买失败`);
         hidePropertyCard(() => {
             updateUI();
@@ -2389,14 +2389,14 @@ window.addEventListener('click', (event) => {
                 
                 // 随机抽取卡片效果
                 const chanceEffects = [
-                    { type: 'money', msg: "天降横财\n+1000!", amt: 1000 },
-                    { type: 'go_start', msg: "回到起点\n+2000!" },
-                    { type: 'pause', msg: "暂停行动\n停赛 2 回合", turns: 2 }
+                    { type: 'money', msg: "Lucky Windfall\n+1000!", amt: 1000 },
+                    { type: 'go_start', msg: "Return to Start\n+2000!" },
+                    { type: 'pause', msg: "Action Paused\nMiss 2 Turns", turns: 2 }
                 ];
                 pendingCardEffect = chanceEffects[Math.floor(Math.random() * chanceEffects.length)];
                 
                 // 更新该卡片的文字
-                updateSpecificCardText(selectedCard, pendingCardEffect.msg, "机会卡\nChance");
+                updateSpecificCardText(selectedCard, pendingCardEffect.msg, "Chance");
             }
         }
     }
@@ -2498,7 +2498,7 @@ function animate() {
             
             // 显示结果文字
             const resultEl = document.getElementById('resultText');
-            resultEl.innerText = `点数: ${rollTotal} (${rollResult1} + ${rollResult2})`;
+            resultEl.innerText = `Roll: ${rollTotal} (${rollResult1} + ${rollResult2})`;
             resultEl.style.display = 'block';
 
             console.log(`[游戏状态] 掷出点数: ${rollTotal} (${rollResult1} + ${rollResult2})`);
@@ -2622,7 +2622,7 @@ function animate() {
                 const effect = pendingCardEffect;
                 if (!effect) return; // 防御性检查
                 
-                eventEl.innerText = `🃏 卡片效果: ${effect.msg.replace('\n', ' ')}`;
+                eventEl.innerText = `🃏 Card Effect: ${effect.msg.replace('\n', ' ')}`;
                 console.log(`[事件] ${eventEl.innerText}`);
                 
                 if (effect.type === 'money') {

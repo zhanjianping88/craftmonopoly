@@ -1,52 +1,495 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 大富翁 - 我的世界风格</title>
+    <title>3D Monopoly Browser Game | Minecraft Style Strategy Board Game</title>
+    <meta name="description" content="Play a free 3D Monopoly browser game with Minecraft-inspired visuals. Build districts, charge rent, dodge tax tiles, and outplay friends or AI in your browser.">
+    <meta name="keywords" content="3D monopoly browser game, minecraft monopoly game, free strategy board game, online monopoly style game, browser board game">
+    <meta name="theme-color" content="#101826">
+    <link rel="canonical" href="https://craftmonopoly.com/">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="3D Monopoly Browser Game">
+    <meta property="og:description" content="A free Minecraft-style browser board game with AI rivals, property upgrades, and fast strategy rounds.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://craftmonopoly.com/">
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "VideoGame",
+            "name": "Craft Monopoly",
+            "url": "https://craftmonopoly.com/",
+            "description": "A free 3D browser board game with Minecraft-inspired visuals, AI rivals, property upgrades, and fast strategy rounds.",
+            "applicationCategory": "Game",
+            "operatingSystem": "Web Browser",
+            "genre": [
+                "Strategy",
+                "Board Game"
+            ],
+            "inLanguage": "en"
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-deep: #0b1320;
+            --bg-panel: rgba(15, 22, 37, 0.82);
+            --bg-panel-strong: rgba(11, 17, 28, 0.92);
+            --border-soft: rgba(255, 255, 255, 0.12);
+            --gold: #ffd166;
+            --mint: #8ef0c3;
+            --cyan: #6ac7ff;
+            --danger: #ff7b7b;
+            --text-main: #f5f7fb;
+            --text-muted: #afbdd4;
+            --shadow-heavy: 0 24px 80px rgba(0, 0, 0, 0.4);
+        }
         body {
             margin: 0;
-            overflow: hidden; /* 隐藏滚动条 */
-            background-color: #87CEEB; /* 天空蓝背景 */
-            font-family: sans-serif;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top, rgba(106, 199, 255, 0.22), transparent 35%),
+                linear-gradient(180deg, #91d6ff 0%, #75bdea 40%, #0b1320 100%);
+            font-family: "Space Grotesk", sans-serif;
+            color: var(--text-main);
         }
         canvas {
             display: block;
         }
-        #ui {
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+        #lobbyUI {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            color: white;
-            text-shadow: 1px 1px 2px black;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 28px;
+            overflow-y: auto;
+            background:
+                linear-gradient(180deg, rgba(7, 11, 18, 0.7), rgba(7, 11, 18, 0.9)),
+                linear-gradient(135deg, rgba(11, 19, 32, 0.92), rgba(14, 27, 44, 0.76));
+            backdrop-filter: blur(6px);
+        }
+        .lobby-shell {
+            width: min(1180px, 100%);
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(360px, 430px);
+            gap: 28px;
+            align-items: stretch;
+        }
+        .lobby-hero,
+        .setup-shell {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-soft);
+            box-shadow: var(--shadow-heavy);
+        }
+        .lobby-hero {
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+            padding: 34px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+        .lobby-hero::before {
+            content: "";
+            position: absolute;
+            inset: auto -80px -120px auto;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 209, 102, 0.35), transparent 68%);
             pointer-events: none;
+        }
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--mint);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .hero-title {
+            margin: 0;
+            max-width: 11ch;
+            font-family: "Chakra Petch", sans-serif;
+            font-size: clamp(44px, 6vw, 74px);
+            line-height: 0.94;
+            letter-spacing: -0.03em;
+            color: var(--text-main);
+            text-wrap: balance;
+        }
+        .hero-copy {
+            margin: 0;
+            max-width: 58ch;
+            color: var(--text-muted);
+            font-size: 18px;
+            line-height: 1.7;
+        }
+        .hero-chips,
+        .stats-grid,
+        .feature-list,
+        .faq-list {
+            display: grid;
+            gap: 12px;
+        }
+        .hero-chips {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .hero-chip,
+        .stat-card,
+        .feature-item,
+        .faq-item {
+            border: 1px solid var(--border-soft);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 18px;
+        }
+        .hero-chip {
+            padding: 14px 16px;
+            font-size: 14px;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+        .hero-chip span {
+            display: block;
+            margin-top: 6px;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .stats-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .stat-card {
+            padding: 18px;
+        }
+        .stat-value {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--gold);
+            font-family: "Chakra Petch", sans-serif;
+            font-size: 30px;
+            font-weight: 700;
+        }
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .section-title {
+            margin: 0 0 14px 0;
+            color: var(--text-main);
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .feature-list {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .feature-item,
+        .faq-item {
+            padding: 18px;
+        }
+        .feature-item strong,
+        .faq-item strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-main);
+            font-size: 15px;
+        }
+        .feature-item p,
+        .faq-item p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .faq-list {
+            grid-template-columns: 1fr;
+        }
+        .setup-shell {
+            border-radius: 24px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 14px;
+        }
+        .setup-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 8px 6px 0;
+        }
+        .setup-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--gold);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .setup-note {
+            color: var(--text-muted);
+            font-size: 13px;
+            text-align: right;
+        }
+        .setup-card {
+            background: var(--bg-panel-strong);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 22px;
+            padding: 28px;
+        }
+        .setup-card h2 {
+            margin: 0 0 10px 0;
+            font-family: "Chakra Petch", sans-serif;
+            font-size: 34px;
+            line-height: 1;
+            letter-spacing: -0.03em;
+        }
+        .setup-card p {
+            margin: 0 0 22px 0;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+        .setup-field {
+            margin-bottom: 18px;
+        }
+        .setup-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #dce6f6;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+        .setup-input,
+        .setup-select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            font-size: 17px;
+        }
+        .setup-input {
+            max-width: 110px;
+            text-align: center;
+        }
+        .setup-primary,
+        .setup-secondary {
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+        }
+        .setup-primary:hover,
+        .setup-secondary:hover {
+            transform: translateY(-1px);
+        }
+        .setup-primary {
+            width: 100%;
+            padding: 16px 22px;
+            background: linear-gradient(135deg, #ffd166, #ffad49);
+            color: #2d1600;
+            box-shadow: 0 16px 28px rgba(255, 173, 73, 0.24);
+            font-size: 18px;
+        }
+        .setup-secondary {
+            padding: 13px 18px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+        .skin-stage-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 250px;
+            gap: 22px;
+            align-items: start;
+            margin-bottom: 24px;
+        }
+        .setup-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .setup-actions .setup-primary {
+            width: auto;
+            flex: 1;
+        }
+        .preview-frame {
+            width: 250px;
+            height: 350px;
+            background:
+                radial-gradient(circle at top, rgba(106, 199, 255, 0.18), transparent 48%),
+                rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            overflow: hidden;
+            cursor: grab;
+        }
+        .micro-copy {
+            color: var(--text-muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        @media (max-width: 980px) {
+            .lobby-shell {
+                grid-template-columns: 1fr;
+            }
+            .hero-title {
+                max-width: none;
+            }
+            .setup-topbar {
+                padding-top: 0;
+            }
+        }
+        @media (max-width: 720px) {
+            #lobbyUI {
+                padding: 16px;
+            }
+            .lobby-hero,
+            .setup-shell,
+            .setup-card {
+                border-radius: 20px;
+            }
+            .lobby-hero,
+            .setup-card {
+                padding: 22px;
+            }
+            .hero-chips,
+            .stats-grid,
+            .feature-list {
+                grid-template-columns: 1fr;
+            }
+            .skin-stage-layout {
+                grid-template-columns: 1fr;
+            }
+            .preview-frame {
+                width: 100%;
+                max-width: 250px;
+                margin: 0 auto;
+            }
+            .setup-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- 游戏初始化/大厅界面 -->
-    <div id="lobbyUI" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; color: white; font-family: sans-serif;">
-        <h1 style="color: #FFD700; font-size: 48px; text-shadow: 2px 2px 4px #000; margin-bottom: 20px;">3D 大富翁 (Minecraft Style)</h1>
-        
-        <!-- 阶段一：选择人数 -->
-        <div id="lobbyPhase1" style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; text-align: center;">
-            <h2 style="margin-top: 0;">游戏设置</h2>
-            <div style="margin-bottom: 20px; font-size: 20px;">
-                <label for="playerCount">选择玩家人数 (2-10): </label>
-                <input type="number" id="playerCount" min="2" max="10" value="4" style="font-size: 20px; width: 60px; text-align: center; border-radius: 5px; border: none; padding: 5px;">
-            </div>
-            <button id="btnNextPhase" style="padding: 15px 40px; font-size: 24px; font-weight: bold; background-color: #2196F3; color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">下一步: 选择皮肤</button>
-        </div>
+    <!-- Lobby / Landing -->
+    <div id="lobbyUI">
+        <div class="lobby-shell">
+            <section class="lobby-hero">
+                <div class="eyebrow">Free Browser Game • 3D Board Strategy</div>
+                <div>
+                    <h1 class="hero-title">Build the block city. Bankrupt the table.</h1>
+                    <p class="hero-copy">3D Monopoly is a fast, Minecraft-inspired browser board game where you buy districts, stack upgrades, cash in on rent, and outmaneuver friends or AI rivals without installing anything.</p>
+                </div>
 
-        <!-- 阶段二：逐个选择皮肤并 3D 预览 -->
-        <div id="lobbyPhase2" style="display: none; background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; text-align: center; width: 600px;">
-            <h2 id="skinSelectTitle" style="margin-top: 0; color: #4CAF50;">玩家 1 皮肤选择</h2>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div style="flex: 1; text-align: left; padding-right: 20px;">
-                    <label for="currentSkinSelect" style="display: block; margin-bottom: 10px; font-size: 18px;">选择皮肤模型:</label>
-                    <select id="currentSkinSelect" style="width: 100%; padding: 10px; font-size: 18px; border-radius: 5px; margin-bottom: 15px;">
+                <div class="hero-chips">
+                    <div class="hero-chip">Instant play<span>Launch a match in seconds right from the browser.</span></div>
+                    <div class="hero-chip">2-10 players<span>Play solo against bots or stack a full lobby.</span></div>
+                    <div class="hero-chip">Strategy first<span>Property timing, tax risk, and jail pressure matter.</span></div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-value">36</span>
+                        <span class="stat-label">board spaces with biome-themed routes and special tiles</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value">AI</span>
+                        <span class="stat-label">bot opponents ready for quick solo sessions and testing</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value">Web</span>
+                        <span class="stat-label">fully playable in-browser with no download wall</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="section-title">Why this version works for an overseas game site</h2>
+                    <div class="feature-list">
+                        <div class="feature-item">
+                            <strong>Clear first-click promise</strong>
+                            <p>Visitors immediately understand the hook: voxel visuals, browser gameplay, property battles, and fast rounds.</p>
+                        </div>
+                        <div class="feature-item">
+                            <strong>Built for content funnels</strong>
+                            <p>The page now reads like a playable landing page, which gives you better footing for SEO pages, ad traffic, and social posts.</p>
+                        </div>
+                        <div class="feature-item">
+                            <strong>Low-friction conversion</strong>
+                            <p>No signup wall, no install prompt, no mystery. The setup card pulls players directly into a match.</p>
+                        </div>
+                        <div class="feature-item">
+                            <strong>Expandable later</strong>
+                            <p>You can layer in leaderboards, rewarded ads, featured skins, email capture, or affiliate-style traffic pages after this.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="section-title">Quick answers</h2>
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <strong>What kind of game is this?</strong>
+                            <p>A Monopoly-style board game with 3D Minecraft-inspired visuals, upgradeable properties, chance cards, and jail mechanics.</p>
+                        </div>
+                        <div class="faq-item">
+                            <strong>Can people play solo?</strong>
+                            <p>Yes. Human and AI player types are supported, so you can run solo sessions or mix bots into a multiplayer table.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="setup-shell">
+                <div class="setup-topbar">
+                    <div class="setup-badge">Play Free in Browser</div>
+                    <div class="setup-note">Best on desktop. Launch a match, then tweak skins and player types.</div>
+                </div>
+
+                <div id="lobbyPhase1" class="setup-card">
+                    <h2>Create Your Match</h2>
+                    <p>Choose the table size, then customize each player before the first roll. This is the fastest way to turn a click into active gameplay.</p>
+                    <div class="setup-field">
+                        <label class="setup-label" for="playerCount">Number of players</label>
+                        <input class="setup-input" type="number" id="playerCount" min="2" max="10" value="4">
+                    </div>
+                    <p class="micro-copy">Tip: 2-4 players is the best quick-start range for shorter, faster matches. Bigger tables create more chaos and trading opportunities.</p>
+                    <button id="btnNextPhase" class="setup-primary">Start Free Game Setup</button>
+                </div>
+
+                <div id="lobbyPhase2" class="setup-card" style="display: none;">
+                    <h2 id="skinSelectTitle">Player 1 Setup</h2>
+                    <p>Pick a skin, decide whether this slot is human or AI, and tune the table before you jump into the board.</p>
+                    
+                    <div class="skin-stage-layout">
+                        <div>
+                            <div class="setup-field">
+                                <label class="setup-label" for="currentSkinSelect">Choose a skin</label>
+                                <select id="currentSkinSelect" class="setup-select">
                         <option value="steve">Steve</option>
                         <option value="alex">Alex</option>
                         <option value="efe">Efe</option>
@@ -56,27 +499,31 @@
                         <option value="noor">Noor</option>
                         <option value="sunny">Sunny</option>
                         <option value="zuri">Zuri</option>
-                    </select>
+                                </select>
+                            </div>
 
-                    <label for="playerTypeSelect" style="display: block; margin-bottom: 10px; font-size: 18px;">玩家类型:</label>
-                    <select id="playerTypeSelect" style="width: 100%; padding: 10px; font-size: 18px; border-radius: 5px;">
-                        <option value="human">人类玩家</option>
-                        <option value="ai">AI 电脑</option>
-                    </select>
+                            <div class="setup-field">
+                                <label class="setup-label" for="playerTypeSelect">Player type</label>
+                                <select id="playerTypeSelect" class="setup-select">
+                        <option value="human">Human</option>
+                        <option value="ai">AI Bot</option>
+                                </select>
+                            </div>
 
-                    <p style="color: #aaa; font-size: 14px; margin-top: 15px;">提示: 可以在右侧 3D 视图中用鼠标拖拽旋转预览模型。</p>
+                            <p class="micro-copy">Tip: Drag inside the preview to rotate the model. Use AI slots to keep matches moving and make solo sessions replayable.</p>
+                        </div>
+                        
+                        <div id="skinPreviewContainer" class="preview-frame">
+                            <!-- Three.js preview canvas mounts here -->
+                        </div>
+                    </div>
+                    
+                    <div class="setup-actions">
+                        <button id="btnPrevPlayer" class="setup-secondary" style="visibility: hidden;">Previous Player</button>
+                        <button id="btnNextPlayer" class="setup-primary">Confirm and Continue</button>
+                    </div>
                 </div>
-                
-                <!-- 3D 预览容器 -->
-                <div id="skinPreviewContainer" style="width: 250px; height: 350px; background: rgba(0,0,0,0.5); border-radius: 10px; overflow: hidden; cursor: grab;">
-                    <!-- Three.js 预览画布将挂载在这里 -->
-                </div>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-                <button id="btnPrevPlayer" style="padding: 10px 20px; font-size: 18px; background-color: #555; color: white; border: none; border-radius: 5px; cursor: pointer; visibility: hidden;">上一个玩家</button>
-                <button id="btnNextPlayer" style="padding: 10px 30px; font-size: 18px; font-weight: bold; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">确认并继续</button>
-            </div>
+            </section>
         </div>
     </div>
 
@@ -87,28 +534,28 @@
     <div id="gameUI" style="display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;">
         <!-- 左上：玩家信息 -->
         <div id="statusUI" style="position: absolute; top: 20px; left: 20px; background-color: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; color: white; display: flex; flex-direction: column; gap: 10px; font-size: 16px; font-family: sans-serif; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); min-width: 200px; pointer-events: auto;">
-            <h3 style="margin: 0 0 10px 0; border-bottom: 1px solid #555; padding-bottom: 5px;">玩家状态</h3>
+            <h3 style="margin: 0 0 10px 0; border-bottom: 1px solid #555; padding-bottom: 5px;">Player Status</h3>
             <!-- 动态生成 -->
         </div>
 
         <!-- 上方：当前回合与控制 -->
         <div id="topCenterUI" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none;">
-            <h2 style="margin: 0; text-shadow: 2px 2px 4px #000; color: white;">3D 大富翁</h2>
-            <h3 id="turnText" style="color: #ff3333; text-shadow: 1px 1px 2px #000; font-size: 24px; margin: 10px 0; background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 20px; display: inline-block;">当前回合: 玩家 1</h3>
+            <h2 style="margin: 0; text-shadow: 2px 2px 4px #000; color: white;">3D Monopoly</h2>
+            <h3 id="turnText" style="color: #ff3333; text-shadow: 1px 1px 2px #000; font-size: 24px; margin: 10px 0; background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 20px; display: inline-block;">Current Turn: Player 1</h3>
             <br>
-            <button id="rollBtn" style="pointer-events: auto; padding: 12px 30px; font-size: 20px; cursor: pointer; background-color: #4CAF50; color: white; border: 2px solid #388E3C; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-top: 10px; font-weight: bold; transition: transform 0.1s;">🎲 掷骰子</button>
-            <h3 id="resultText" style="color: #FFD700; text-shadow: 2px 2px 4px #000; display: none; margin-top: 15px; font-size: 24px; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px;">点数: </h3>
-            <h3 id="eventText" style="color: #ffffff; background-color: rgba(0,0,0,0.8); padding: 15px 25px; border-radius: 8px; display: none; margin-top: 15px; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid #555;">事件: </h3>
+            <button id="rollBtn" style="pointer-events: auto; padding: 12px 30px; font-size: 20px; cursor: pointer; background-color: #4CAF50; color: white; border: 2px solid #388E3C; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-top: 10px; font-weight: bold; transition: transform 0.1s;">🎲 Roll Dice</button>
+            <h3 id="resultText" style="color: #FFD700; text-shadow: 2px 2px 4px #000; display: none; margin-top: 15px; font-size: 24px; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px;">Roll: </h3>
+            <h3 id="eventText" style="color: #ffffff; background-color: rgba(0,0,0,0.8); padding: 15px 25px; border-radius: 8px; display: none; margin-top: 15px; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid #555;">Event: </h3>
         </div>
 
         <!-- 右侧：设置与管理 -->
         <div id="rightUI" style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px; align-items: flex-end; pointer-events: auto;">
-            <button id="btnManageAssets" style="padding: 12px 24px; background: #9C27B0; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 2px 2px 8px rgba(0,0,0,0.4); transition: transform 0.1s;">🏦 资产管理</button>
+            <button id="btnManageAssets" style="padding: 12px 24px; background: #9C27B0; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 2px 2px 8px rgba(0,0,0,0.4); transition: transform 0.1s;">🏦 Asset Manager</button>
             
             <div id="skinUI" style="background-color: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; color: white; font-family: sans-serif; box-shadow: 2px 2px 10px rgba(0,0,0,0.5);">
-                <h3 style="margin-top: 0; text-align: center; border-bottom: 1px solid #555; padding-bottom: 5px; font-size: 16px;">环境设置</h3>
+                <h3 style="margin-top: 0; text-align: center; border-bottom: 1px solid #555; padding-bottom: 5px; font-size: 16px;">Environment</h3>
                 <div style="margin-bottom: 10px;">
-                    <label for="giantSkin" style="color: #ffaa00; font-size: 14px;">桌面巨人:</label>
+                    <label for="giantSkin" style="color: #ffaa00; font-size: 14px;">Board Giant:</label>
                     <select id="giantSkin" style="padding: 5px; border-radius: 4px; margin-top: 5px; width: 100%; background: #333; color: white; border: 1px solid #555;">
                     <option value="efe" selected>Efe</option>
                     <option value="steve">Steve</option>
@@ -128,7 +575,7 @@
             
             <!-- 创作者调试入口 -->
             <div style="margin-top: 10px; text-align: center; pointer-events: auto;">
-                <button id="btnOpenDebug" style="background: rgba(255,255,255,0.8); border: 2px solid #333; color: #333; padding: 8px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">⚙️ 调试面板</button>
+                <button id="btnOpenDebug" style="background: rgba(255,255,255,0.8); border: 2px solid #333; color: #333; padding: 8px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">⚙️ Debug Panel</button>
             </div>
         </div>
         <!-- 结束 #skinUI -->
@@ -137,77 +584,77 @@
 
         <!-- 资产管理与交易弹窗 -->
         <div id="assetsPanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(30,30,30,0.95); padding: 25px; border-radius: 10px; color: white; text-align: left; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); min-width: 450px; z-index: 100;">
-            <h2 id="assetsTitle" style="margin-top: 0; border-bottom: 2px solid #555; padding-bottom: 10px; color: #FFD700;">我的资产</h2>
+            <h2 id="assetsTitle" style="margin-top: 0; border-bottom: 2px solid #555; padding-bottom: 10px; color: #FFD700;">My Assets</h2>
             <div id="assetsList" style="max-height: 250px; overflow-y: auto; margin-bottom: 20px;">
                 <!-- 动态生成的房产列表 -->
             </div>
             <div id="debtWarning" style="color: #ff5555; font-weight: bold; margin-bottom: 15px; display: none;">
-                ⚠️ 您当前负债，必须变卖资产直至资金为正才能继续游戏！
+                ⚠️ You are in debt. Sell assets until your balance is positive to continue.
             </div>
             <div style="text-align: right;">
-                <button id="btnCloseAssets" style="padding: 8px 20px; background: #555; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">关闭</button>
+                <button id="btnCloseAssets" style="padding: 8px 20px; background: #555; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Close</button>
             </div>
         </div>
 
         <!-- 交易设置弹窗 -->
         <div id="tradeSetupPanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(40,40,60,0.95); padding: 25px; border-radius: 10px; color: white; text-align: left; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 102; min-width: 300px;">
-            <h2 style="margin-top: 0; color: #2196F3; border-bottom: 1px solid #555; padding-bottom: 10px;">设置交易信息</h2>
-            <p id="tradeSetupDesc" style="font-size: 16px; margin-bottom: 15px;">你要出售的房产：</p>
+            <h2 style="margin-top: 0; color: #2196F3; border-bottom: 1px solid #555; padding-bottom: 10px;">Set Up Trade</h2>
+            <p id="tradeSetupDesc" style="font-size: 16px; margin-bottom: 15px;">Property for sale:</p>
             
             <div style="margin-bottom: 15px;">
-                <label for="tradeBuyerSelect" style="display: block; margin-bottom: 5px; color: #aaa;">选择买家：</label>
+                <label for="tradeBuyerSelect" style="display: block; margin-bottom: 5px; color: #aaa;">Choose buyer:</label>
                 <select id="tradeBuyerSelect" style="width: 100%; padding: 8px; border-radius: 4px; background: #333; color: white; border: 1px solid #555; font-size: 16px;">
                     <!-- 动态填充 -->
                 </select>
             </div>
             
             <div style="margin-bottom: 20px;">
-                <label for="tradePriceInput" style="display: block; margin-bottom: 5px; color: #aaa;">输入价格 ($)：</label>
+                <label for="tradePriceInput" style="display: block; margin-bottom: 5px; color: #aaa;">Set price ($):</label>
                 <input type="number" id="tradePriceInput" min="1" value="100" style="width: 100%; padding: 8px; border-radius: 4px; background: #333; color: white; border: 1px solid #555; font-size: 16px; box-sizing: border-box;">
             </div>
             
             <div style="text-align: right; margin-top: 10px;">
-                <button id="btnCancelTradeSetup" style="padding: 8px 15px; background: #555; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-right: 10px;">取消</button>
-                <button id="btnConfirmTradeSetup" style="padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">发起交易</button>
+                <button id="btnCancelTradeSetup" style="padding: 8px 15px; background: #555; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-right: 10px;">Cancel</button>
+                <button id="btnConfirmTradeSetup" style="padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">Send Offer</button>
             </div>
         </div>
 
         <!-- 玩家交易请求弹窗 -->
         <div id="tradePanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(50,20,20,0.95); padding: 25px; border-radius: 10px; color: white; text-align: center; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 101;">
-            <h2 style="margin-top: 0; color: #FF9800;">房产交易请求</h2>
-            <p id="tradeDesc" style="font-size: 18px; margin-bottom: 20px;">玩家 1 想要以 $500 卖给你 [空地 3]</p>
-            <button id="btnAcceptTrade" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-right: 10px; font-weight: bold;">同意购买</button>
-            <button id="btnRejectTrade" style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">拒绝</button>
+            <h2 style="margin-top: 0; color: #FF9800;">Property Trade Offer</h2>
+            <p id="tradeDesc" style="font-size: 18px; margin-bottom: 20px;">Player 1 wants to sell you [Plains 3] for $500.</p>
+            <button id="btnAcceptTrade" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-right: 10px; font-weight: bold;">Accept</button>
+            <button id="btnRejectTrade" style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">Decline</button>
         </div>
 
         <!-- 监狱选项弹窗 -->
         <div id="jailPanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(40,40,40,0.95); padding: 25px; border-radius: 10px; color: white; text-align: center; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 103;">
-            <h2 style="margin-top: 0; color: #f44336;">👮 你被抓进了警察局！</h2>
-            <p id="jailDesc" style="font-size: 18px; margin-bottom: 20px;">是否花费 $500 缴纳保释金以继续游戏？<br>(取消则入狱停赛 2 回合)</p>
-            <button id="btnPayBail" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-right: 10px; font-weight: bold;">缴纳保释金</button>
-            <button id="btnGoToJail" style="padding: 10px 20px; background: #555; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">认罚入狱</button>
+            <h2 style="margin-top: 0; color: #f44336;">👮 You got sent to jail!</h2>
+            <p id="jailDesc" style="font-size: 18px; margin-bottom: 20px;">Pay $500 bail to stay in the game?<br>(If not, you will miss 2 turns.)</p>
+            <button id="btnPayBail" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-right: 10px; font-weight: bold;">Pay Bail</button>
+            <button id="btnGoToJail" style="padding: 10px 20px; background: #555; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">Serve Time</button>
         </div>
 
         <!-- 创作者调试面板 -->
         <div id="debugPanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(20,20,30,0.95); padding: 25px; border-radius: 10px; color: white; text-align: center; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 105; min-width: 320px; border: 2px solid #4CAF50;">
-            <h2 style="margin-top: 0; color: #4CAF50; border-bottom: 1px solid #555; padding-bottom: 10px;">⚙️ 创作者调试模式</h2>
+            <h2 style="margin-top: 0; color: #4CAF50; border-bottom: 1px solid #555; padding-bottom: 10px;">⚙️ Creator Debug Mode</h2>
             
             <!-- 登录视图 -->
             <div id="debugLoginView">
-                <p style="margin-bottom: 15px; color: #aaa;">请输入调试密码以继续：</p>
-                <input type="password" id="debugPasswordInput" placeholder="密码" style="padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #555; background: #333; color: white; width: 80%; text-align: center; letter-spacing: 5px; margin-bottom: 15px;">
+                <p style="margin-bottom: 15px; color: #aaa;">Enter the debug password to continue:</p>
+                <input type="password" id="debugPasswordInput" placeholder="Password" style="padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #555; background: #333; color: white; width: 80%; text-align: center; letter-spacing: 5px; margin-bottom: 15px;">
                 <br>
-                <button id="btnDebugLogin" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; margin-right: 10px;">验证</button>
-                <button id="btnDebugCloseLogin" style="padding: 10px 20px; background: #555; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">取消</button>
+                <button id="btnDebugLogin" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; margin-right: 10px;">Verify</button>
+                <button id="btnDebugCloseLogin" style="padding: 10px 20px; background: #555; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">Cancel</button>
             </div>
             
             <!-- 控制视图 -->
             <div id="debugControlView" style="display: none;">
-                <p style="margin-bottom: 15px; color: #FFD700; font-weight: bold;">身份验证成功！</p>
+                <p style="margin-bottom: 15px; color: #FFD700; font-weight: bold;">Access granted.</p>
                 
                 <!-- 选择玩家 -->
                 <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
-                    <label for="debugPlayerSelect" style="display: block; margin-bottom: 10px; font-size: 16px;">选择目标玩家：</label>
+                    <label for="debugPlayerSelect" style="display: block; margin-bottom: 10px; font-size: 16px;">Choose target player:</label>
                     <select id="debugPlayerSelect" style="width: 100%; padding: 8px; border-radius: 5px; background: #333; color: white; border: 1px solid #555;">
                         <!-- 动态填充 -->
                     </select>
@@ -215,24 +662,24 @@
 
                 <!-- 功能区 1：控制骰子 -->
                 <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
-                    <label for="debugDiceInput" style="display: block; margin-bottom: 10px; font-size: 16px;">设置下一次骰子点数 (2-12)：</label>
+                    <label for="debugDiceInput" style="display: block; margin-bottom: 10px; font-size: 16px;">Set the next dice roll (2-12):</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <input type="number" id="debugDiceInput" min="2" max="12" value="2" style="padding: 8px; font-size: 16px; border-radius: 5px; border: none; width: 60px; text-align: center;">
-                        <button id="btnSetDebugDice" style="padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1;">确认覆盖</button>
+                        <button id="btnSetDebugDice" style="padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1;">Apply Override</button>
                     </div>
                 </div>
 
                 <!-- 功能区 2：修改玩家钱 -->
                 <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
-                    <label for="debugMoneyInput" style="display: block; margin-bottom: 10px; font-size: 16px;">修改玩家金币 (正数为加，负数为减)：</label>
+                    <label for="debugMoneyInput" style="display: block; margin-bottom: 10px; font-size: 16px;">Adjust player cash (positive adds, negative subtracts):</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <input type="number" id="debugMoneyInput" value="1000" style="padding: 8px; font-size: 16px; border-radius: 5px; border: none; width: 80px; text-align: center;">
-                        <button id="btnSetDebugMoney" style="padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1;">确认修改</button>
+                        <button id="btnSetDebugMoney" style="padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1;">Apply Change</button>
                     </div>
                 </div>
 
-                <p id="debugStatusText" style="color: #4CAF50; font-size: 14px; margin-bottom: 15px; display: none;">状态更新成功！</p>
-                <button id="btnDebugCloseControl" style="padding: 8px 20px; background: #f44336; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; width: 100%;">关闭面板</button>
+                <p id="debugStatusText" style="color: #4CAF50; font-size: 14px; margin-bottom: 15px; display: none;">Update applied.</p>
+                <button id="btnDebugCloseControl" style="padding: 8px 20px; background: #f44336; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; width: 100%;">Close Panel</button>
             </div>
         </div>
 
@@ -241,42 +688,42 @@
             <!-- 左侧：白色卡片 -->
             <div style="background-color: white; color: black; width: 280px; border-radius: 10px 0 0 10px; box-shadow: -5px 5px 15px rgba(0,0,0,0.5); padding: 0; border: 2px solid #333; overflow: hidden; display: flex; flex-direction: column;">
                 <div style="background-color: #f0f0f0; text-align: center; padding: 10px; border-bottom: 2px solid #333;">
-                    <span style="font-size: 14px; font-weight: bold; letter-spacing: 2px; color: #555;">房产证</span>
-                    <h2 id="pcTitle" style="margin: 5px 0 0 0; font-size: 28px; color: #333;">草地方块</h2>
+                    <span style="font-size: 14px; font-weight: bold; letter-spacing: 2px; color: #555;">PROPERTY DEED</span>
+                    <h2 id="pcTitle" style="margin: 5px 0 0 0; font-size: 28px; color: #333;">Plains 1</h2>
                 </div>
                 <div style="padding: 15px; font-size: 16px; line-height: 1.6; flex: 1;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>基础租金:</span><strong id="pcRent0">$0</strong></div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>同色地块:</span><strong id="pcRent1">$0</strong></div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #4CAF50;"><span>1个房子:</span><strong id="pcRent2">$0</strong></div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #4CAF50;"><span>2个房子:</span><strong id="pcRent3">$0</strong></div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #4CAF50;"><span>3个房子:</span><strong id="pcRent4">$0</strong></div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #4CAF50;"><span>4个房子:</span><strong id="pcRent5">$0</strong></div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #d32f2f;"><span>酒店:</span><strong id="pcRent6">$0</strong></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Base Rent:</span><strong id="pcRent0">$0</strong></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Color Set:</span><strong id="pcRent1">$0</strong></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #4CAF50;"><span>1 House:</span><strong id="pcRent2">$0</strong></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #4CAF50;"><span>2 Houses:</span><strong id="pcRent3">$0</strong></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #4CAF50;"><span>3 Houses:</span><strong id="pcRent4">$0</strong></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #4CAF50;"><span>4 Houses:</span><strong id="pcRent5">$0</strong></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #d32f2f;"><span>Hotel:</span><strong id="pcRent6">$0</strong></div>
                 </div>
                 <div style="background-color: #f9f9f9; padding: 15px; border-top: 2px solid #333; font-size: 14px; color: #666;">
-                    <div style="display: flex; justify-content: space-between;"><span>房子价格:</span><strong id="pcHousePrice">$0/个</strong></div>
-                    <div style="display: flex; justify-content: space-between;"><span>酒店价格:</span><strong id="pcHotelPrice">$0</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span>House Price:</span><strong id="pcHousePrice">$0 each</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Hotel Price:</span><strong id="pcHotelPrice">$0</strong></div>
                 </div>
             </div>
 
             <!-- 右侧：绿色面板 -->
             <div style="background-color: #4CAF50; color: white; width: 220px; border-radius: 0 10px 10px 0; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 2px solid #388E3C; border-left: none;">
-                <h3 style="margin-top: 0; font-size: 24px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">房产</h3>
-                <p id="pcPrompt" style="font-size: 16px; text-align: center; margin-bottom: 15px; line-height: 1.5;">是否购买【草地方块】？</p>
+                <h3 style="margin-top: 0; font-size: 24px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">Property</h3>
+                <p id="pcPrompt" style="font-size: 16px; text-align: center; margin-bottom: 15px; line-height: 1.5;">Do you want to buy [Plains 1]?</p>
                 
                 <div style="width: 100%; margin-bottom: 20px; text-align: center;">
-                    <label for="pcBuildingSelect" style="font-size: 14px; margin-bottom: 5px; display: block; color: #e8f5e9;">一并购买建筑：</label>
+                    <label for="pcBuildingSelect" style="font-size: 14px; margin-bottom: 5px; display: block; color: #e8f5e9;">Bundle buildings:</label>
                     <select id="pcBuildingSelect" style="width: 100%; padding: 8px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; color: #333;">
-                        <option value="0">买地 + 1个房子</option>
-                        <option value="1">买地 + 2个房子</option>
-                        <option value="2">买地 + 3个房子</option>
-                        <option value="3">买地 + 4个房子</option>
-                        <option value="4">买地 + 旅馆</option>
+                        <option value="0">Land + 1 House</option>
+                        <option value="1">Land + 2 Houses</option>
+                        <option value="2">Land + 3 Houses</option>
+                        <option value="3">Land + 4 Houses</option>
+                        <option value="4">Land + Hotel</option>
                     </select>
                 </div>
 
-                <button id="pcBtnBuy" style="width: 100%; padding: 12px; font-size: 18px; font-weight: bold; background-color: #FFD700; color: #333; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin-bottom: 15px; transition: transform 0.1s, background-color 0.2s;">购买 ($100)</button>
-                <button id="pcBtnCancel" style="width: 100%; padding: 12px; font-size: 18px; font-weight: bold; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.1s, background-color 0.2s;">取消</button>
+                <button id="pcBtnBuy" style="width: 100%; padding: 12px; font-size: 18px; font-weight: bold; background-color: #FFD700; color: #333; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin-bottom: 15px; transition: transform 0.1s, background-color 0.2s;">Buy ($100)</button>
+                <button id="pcBtnCancel" style="width: 100%; padding: 12px; font-size: 18px; font-weight: bold; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.1s, background-color 0.2s;">Skip</button>
             </div>
         </div>
     </div>
