@@ -949,11 +949,6 @@
             <div id="playerSkinsContainer" style="display: none;">
                 <!-- 游戏内不再生成玩家皮肤下拉框，隐藏此容器以防残留逻辑报错 -->
             </div>
-            
-            <!-- 创作者调试入口 -->
-            <div style="margin-top: 10px; text-align: center; pointer-events: auto;">
-                <button id="btnOpenDebug" style="background: rgba(255,255,255,0.8); border: 2px solid #333; color: #333; padding: 8px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">⚙️ Debug Panel</button>
-            </div>
         </div>
         <!-- 结束 #skinUI -->
         </div>
@@ -1010,54 +1005,6 @@
             <p id="jailDesc" style="font-size: 18px; margin-bottom: 20px;">Pay $500 bail to stay in the game?<br>(If not, you will miss 2 turns.)</p>
             <button id="btnPayBail" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-right: 10px; font-weight: bold;">Pay Bail</button>
             <button id="btnGoToJail" style="padding: 10px 20px; background: #555; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">Serve Time</button>
-        </div>
-
-        <!-- 创作者调试面板 -->
-        <div id="debugPanel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(20,20,30,0.95); padding: 25px; border-radius: 10px; color: white; text-align: center; pointer-events: auto; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 105; min-width: 320px; border: 2px solid #4CAF50;">
-            <h2 style="margin-top: 0; color: #4CAF50; border-bottom: 1px solid #555; padding-bottom: 10px;">⚙️ Creator Debug Mode</h2>
-            
-            <!-- 登录视图 -->
-            <div id="debugLoginView">
-                <p style="margin-bottom: 15px; color: #aaa;">Enter the debug password to continue:</p>
-                <input type="password" id="debugPasswordInput" placeholder="Password" style="padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #555; background: #333; color: white; width: 80%; text-align: center; letter-spacing: 5px; margin-bottom: 15px;">
-                <br>
-                <button id="btnDebugLogin" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; margin-right: 10px;">Verify</button>
-                <button id="btnDebugCloseLogin" style="padding: 10px 20px; background: #555; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">Cancel</button>
-            </div>
-            
-            <!-- 控制视图 -->
-            <div id="debugControlView" style="display: none;">
-                <p style="margin-bottom: 15px; color: #FFD700; font-weight: bold;">Access granted.</p>
-                
-                <!-- 选择玩家 -->
-                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
-                    <label for="debugPlayerSelect" style="display: block; margin-bottom: 10px; font-size: 16px;">Choose target player:</label>
-                    <select id="debugPlayerSelect" style="width: 100%; padding: 8px; border-radius: 5px; background: #333; color: white; border: 1px solid #555;">
-                        <!-- 动态填充 -->
-                    </select>
-                </div>
-
-                <!-- 功能区 1：控制骰子 -->
-                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
-                    <label for="debugDiceInput" style="display: block; margin-bottom: 10px; font-size: 16px;">Set the next dice roll (2-12):</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="number" id="debugDiceInput" min="2" max="12" value="2" style="padding: 8px; font-size: 16px; border-radius: 5px; border: none; width: 60px; text-align: center;">
-                        <button id="btnSetDebugDice" style="padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1;">Apply Override</button>
-                    </div>
-                </div>
-
-                <!-- 功能区 2：修改玩家钱 -->
-                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
-                    <label for="debugMoneyInput" style="display: block; margin-bottom: 10px; font-size: 16px;">Adjust player cash (positive adds, negative subtracts):</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="number" id="debugMoneyInput" value="1000" style="padding: 8px; font-size: 16px; border-radius: 5px; border: none; width: 80px; text-align: center;">
-                        <button id="btnSetDebugMoney" style="padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1;">Apply Change</button>
-                    </div>
-                </div>
-
-                <p id="debugStatusText" style="color: #4CAF50; font-size: 14px; margin-bottom: 15px; display: none;">Update applied.</p>
-                <button id="btnDebugCloseControl" style="padding: 8px 20px; background: #f44336; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; width: 100%;">Close Panel</button>
-            </div>
         </div>
 
         <!-- 房产卡片UI -->

@@ -1858,102 +1858,6 @@ let rollTotal = 2;
 let slerpStarted = false;
 let rollLastSoundTick = -1;
 
-// 创作者调试模式状态
-let nextDiceOverride = null; // null 表示不覆盖，数字表示覆盖的点数
-
-// --- 绑定调试面板事件 ---
-document.getElementById('btnOpenDebug').addEventListener('click', (e) => {
-    e.stopPropagation(); // 阻止事件冒泡，防止触发其他全局点击事件
-    document.getElementById('debugPanel').style.display = 'block';
-    document.getElementById('debugLoginView').style.display = 'block';
-    document.getElementById('debugControlView').style.display = 'none';
-    document.getElementById('debugPasswordInput').value = '';
-    
-    // 填充玩家选择列表
-    const playerSelect = document.getElementById('debugPlayerSelect');
-    if (playerSelect) {
-        playerSelect.innerHTML = '';
-        players.forEach((p, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.innerText = `Player ${p.id} (${p.name})`;
-            if (index === currentPlayerTurn) option.selected = true;
-            playerSelect.appendChild(option);
-        });
-    }
-});
-
-document.getElementById('debugPanel').addEventListener('click', (e) => {
-    e.stopPropagation(); // 阻止在调试面板内部点击时冒泡到全局
-});
-
-document.getElementById('debugPanel').addEventListener('mousedown', (e) => {
-    e.stopPropagation(); // 阻止 mousedown 冒泡，防止 OrbitControls 抢占焦点
-});
-
-document.getElementById('debugPanel').addEventListener('touchstart', (e) => {
-    e.stopPropagation(); // 阻止 touchstart 冒泡
-}, { passive: false });
-
-document.getElementById('btnDebugCloseLogin').addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.getElementById('debugPanel').style.display = 'none';
-});
-
-document.getElementById('btnDebugCloseControl').addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.getElementById('debugPanel').style.display = 'none';
-    document.getElementById('debugStatusText').style.display = 'none';
-});
-
-document.getElementById('btnDebugLogin').addEventListener('click', () => {
-    const pwd = document.getElementById('debugPasswordInput').value;
-    if (pwd === '0000') {
-        document.getElementById('debugLoginView').style.display = 'none';
-        document.getElementById('debugControlView').style.display = 'block';
-    } else {
-        alert('Wrong password!');
-    }
-});
-
-document.getElementById('btnSetDebugDice').addEventListener('click', () => {
-    const val = parseInt(document.getElementById('debugDiceInput').value);
-    if (!isNaN(val) && val >= 2 && val <= 12) {
-        nextDiceOverride = val;
-        const statusText = document.getElementById('debugStatusText');
-        statusText.innerText = `The next dice roll has been overridden to ${val}.`;
-        statusText.style.display = 'block';
-        
-        setTimeout(() => {
-            statusText.style.display = 'none';
-        }, 3000);
-    } else {
-        alert('Enter a valid number between 2 and 12!');
-    }
-});
-
-document.getElementById('btnSetDebugMoney').addEventListener('click', () => {
-    const val = parseInt(document.getElementById('debugMoneyInput').value);
-    const targetIdx = parseInt(document.getElementById('debugPlayerSelect').value);
-    
-    if (!isNaN(val) && !isNaN(targetIdx)) {
-        const targetPlayer = players[targetIdx];
-        targetPlayer.money += val; // 正数为加，负数为减
-        
-        updateStatusUI(); // 更新顶部金币显示
-        
-        const statusText = document.getElementById('debugStatusText');
-        statusText.innerText = `${targetPlayer.name}'s cash changed by ${val > 0 ? '+' : ''}${val}. Current balance: ${targetPlayer.money}`;
-        statusText.style.display = 'block';
-        
-        setTimeout(() => {
-            statusText.style.display = 'none';
-        }, 3000);
-    } else {
-        alert('Enter a valid amount and choose a player!');
-    }
-});
-
 const targetQuaternion1 = new THREE.Quaternion();
 const targetQuaternion2 = new THREE.Quaternion();
 const startQuaternion1 = new THREE.Quaternion();
@@ -1986,25 +1890,10 @@ document.getElementById('rollBtn').addEventListener('click', () => {
     rollStartTime = performance.now();
     rollLastSoundTick = -1;
     
-    if (nextDiceOverride !== null) {
-        // 如果启用了创作者调试覆盖
-        console.log(`[调试模式] 强制指定骰子总数为: ${nextDiceOverride}`);
-        rollTotal = nextDiceOverride;
-        // 拆分总数到两个骰子上 (1-6)
-        if (rollTotal > 7) {
-            rollResult1 = 6;
-            rollResult2 = rollTotal - 6;
-        } else {
-            rollResult1 = rollTotal - 1;
-            rollResult2 = 1;
-        }
-        nextDiceOverride = null; // 用完即作废
-    } else {
-        // 正常随机掷骰子
-        rollResult1 = Math.floor(Math.random() * 6) + 1;
-        rollResult2 = Math.floor(Math.random() * 6) + 1;
-        rollTotal = rollResult1 + rollResult2;
-    }
+    // 正常随机掷骰子
+    rollResult1 = Math.floor(Math.random() * 6) + 1;
+    rollResult2 = Math.floor(Math.random() * 6) + 1;
+    rollTotal = rollResult1 + rollResult2;
     
     // 隐藏上次的文字结果
     document.getElementById('resultText').style.display = 'none';
