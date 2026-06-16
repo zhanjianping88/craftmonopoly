@@ -1,0 +1,47 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="40" x2="1080" y2="590" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#11233D"/>
+      <stop offset="0.55" stop-color="#173760"/>
+      <stop offset="1" stop-color="#08121F"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFD166"/>
+      <stop offset="1" stop-color="#FF9E49"/>
+    </linearGradient>
+    <linearGradient id="mint" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#8EF0C3"/>
+      <stop offset="1" stop-color="#6AC7FF"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="1200" height="630" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="30" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" rx="32" fill="url(#bg)"/>
+  <circle cx="1010" cy="125" r="135" fill="#6AC7FF" fill-opacity="0.12"/>
+  <circle cx="968" cy="532" r="168" fill="#FFD166" fill-opacity="0.12"/>
+  <rect x="66" y="58" width="148" height="38" rx="19" fill="#17314F"/>
+  <text x="87" y="83" fill="#8EF0C3" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="1.6">PLAY FREE IN BROWSER</text>
+  <text x="68" y="200" fill="white" font-family="Arial, sans-serif" font-size="86" font-weight="700">Craft Monopoly</text>
+  <text x="68" y="270" fill="#D6E3F4" font-family="Arial, sans-serif" font-size="30" font-weight="400">Minecraft-style 3D strategy board game with AI rivals,</text>
+  <text x="68" y="310" fill="#D6E3F4" font-family="Arial, sans-serif" font-size="30" font-weight="400">fast rounds, property upgrades, and instant browser play.</text>
+  <g filter="url(#shadow)">
+    <rect x="68" y="376" width="190" height="62" rx="18" fill="url(#gold)"/>
+    <text x="111" y="416" fill="#2D1600" font-family="Arial, sans-serif" font-size="24" font-weight="700">PLAY NOW</text>
+    <rect x="278" y="376" width="230" height="62" rx="18" fill="#1A2B46" stroke="#31496B"/>
+    <text x="328" y="416" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="700">VIEW SOURCE</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="708" y="102" width="408" height="430" rx="28" fill="#0F1625" fill-opacity="0.92" stroke="#22324A"/>
+    <rect x="760" y="160" width="132" height="132" rx="20" fill="url(#mint)"/>
+    <rect x="912" y="160" width="132" height="132" rx="20" fill="#24344D"/>
+    <rect x="836" y="314" width="132" height="132" rx="20" fill="url(#gold)"/>
+    <path d="M827 197L864 176L901 197V239L864 260L827 239V197Z" fill="#0F1625"/>
+    <path d="M979 197L1016 176L1053 197V239L1016 260L979 239V197Z" fill="#8EF0C3"/>
+    <path d="M903 351L940 330L977 351V393L940 414L903 393V351Z" fill="#173760"/>
+    <rect x="760" y="472" width="284" height="24" rx="12" fill="#21334C"/>
+    <rect x="760" y="472" width="170" height="24" rx="12" fill="url(#gold)"/>
+    <text x="760" y="134" fill="white" font-family="Arial, sans-serif" font-size="30" font-weight="700">Live Game Funnel</text>
+  </g>
+  <text x="68" y="546" fill="#93A8C7" font-family="Arial, sans-serif" font-size="22" font-weight="400">craftmonopoly.com</text>
+</svg>

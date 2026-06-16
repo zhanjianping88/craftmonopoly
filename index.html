@@ -13,6 +13,11 @@
     <meta property="og:description" content="A free Minecraft-style browser board game with AI rivals, property upgrades, and fast strategy rounds.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://craftmonopoly.com/">
+    <meta property="og:image" content="https://craftmonopoly.com/cover.svg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Craft Monopoly">
+    <meta name="twitter:description" content="Play a free Minecraft-style 3D browser board game with AI rivals and fast strategy rounds.">
+    <meta name="twitter:image" content="https://craftmonopoly.com/cover.svg">
     <script type="application/ld+json">
         {
             "@context": "https://schema.org",
@@ -122,6 +127,49 @@
             letter-spacing: 0.08em;
             text-transform: uppercase;
         }
+        .hero-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            position: relative;
+            z-index: 1;
+        }
+        .brand-mark {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: "Chakra Petch", sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+        .brand-cube {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            background: linear-gradient(135deg, var(--gold), #ff9d4d);
+            box-shadow: 12px 8px 0 rgba(106, 199, 255, 0.55);
+        }
+        .nav-links,
+        .hero-actions,
+        .utility-links,
+        .pill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .nav-link,
+        .utility-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .nav-link:hover,
+        .utility-link:hover {
+            color: var(--text-main);
+        }
         .hero-title {
             margin: 0;
             max-width: 11ch;
@@ -139,8 +187,40 @@
             font-size: 18px;
             line-height: 1.7;
         }
+        .hero-actions {
+            position: relative;
+            z-index: 1;
+        }
+        .cta-primary,
+        .cta-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 52px;
+            padding: 0 22px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+        }
+        .cta-primary:hover,
+        .cta-secondary:hover {
+            transform: translateY(-1px);
+        }
+        .cta-primary {
+            background: linear-gradient(135deg, #ffd166, #ffad49);
+            color: #2d1600;
+            box-shadow: 0 16px 28px rgba(255, 173, 73, 0.24);
+        }
+        .cta-secondary {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
         .hero-chips,
         .stats-grid,
+        .utility-grid,
         .feature-list,
         .faq-list {
             display: grid;
@@ -175,6 +255,65 @@
         }
         .stat-card {
             padding: 18px;
+        }
+        .utility-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .utility-card {
+            padding: 20px;
+            border: 1px solid var(--border-soft);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .utility-badge {
+            display: inline-flex;
+            margin-bottom: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(142, 240, 195, 0.12);
+            color: var(--mint);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .utility-card strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 17px;
+        }
+        .utility-card p {
+            margin: 0 0 14px 0;
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .ad-slot {
+            display: grid;
+            place-items: center;
+            min-height: 120px;
+            border: 1px dashed rgba(255, 209, 102, 0.4);
+            border-radius: 18px;
+            background:
+                linear-gradient(135deg, rgba(255, 209, 102, 0.08), rgba(106, 199, 255, 0.08)),
+                rgba(255, 255, 255, 0.03);
+            text-align: center;
+            padding: 16px;
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .pill-list {
+            gap: 10px;
+        }
+        .pill-list span {
+            display: inline-flex;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            font-size: 12px;
+            font-weight: 600;
         }
         .stat-value {
             display: block;
@@ -356,6 +495,10 @@
             .lobby-shell {
                 grid-template-columns: 1fr;
             }
+            .hero-nav {
+                flex-direction: column;
+                align-items: flex-start;
+            }
             .hero-title {
                 max-width: none;
             }
@@ -378,6 +521,7 @@
             }
             .hero-chips,
             .stats-grid,
+            .utility-grid,
             .feature-list {
                 grid-template-columns: 1fr;
             }
@@ -400,10 +544,26 @@
     <div id="lobbyUI">
         <div class="lobby-shell">
             <section class="lobby-hero">
+                <nav class="hero-nav" aria-label="Primary">
+                    <div class="brand-mark">
+                        <span class="brand-cube" aria-hidden="true"></span>
+                        <span>Craft Monopoly</span>
+                    </div>
+                    <div class="nav-links">
+                        <a class="nav-link" href="#playerCount">Play Now</a>
+                        <a class="nav-link" href="#moreGames">More Games</a>
+                        <a class="nav-link" href="#contactPanel">Contact</a>
+                        <a class="nav-link" href="https://github.com/zhanjianping88/craftmonopoly" target="_blank" rel="noreferrer">GitHub</a>
+                    </div>
+                </nav>
                 <div class="eyebrow">Free Browser Game • 3D Board Strategy</div>
                 <div>
                     <h1 class="hero-title">Build the block city. Bankrupt the table.</h1>
                     <p class="hero-copy">3D Monopoly is a fast, Minecraft-inspired browser board game where you buy districts, stack upgrades, cash in on rent, and outmaneuver friends or AI rivals without installing anything.</p>
+                </div>
+                <div class="hero-actions">
+                    <a class="cta-primary" href="#playerCount">Play Craft Monopoly</a>
+                    <a class="cta-secondary" href="https://github.com/zhanjianping88/craftmonopoly" target="_blank" rel="noreferrer">View Source on GitHub</a>
                 </div>
 
                 <div class="hero-chips">
@@ -424,6 +584,47 @@
                     <div class="stat-card">
                         <span class="stat-value">Web</span>
                         <span class="stat-label">fully playable in-browser with no download wall</span>
+                    </div>
+                </div>
+
+                <div class="utility-grid">
+                    <div class="utility-card">
+                        <span class="utility-badge">Launch Fast</span>
+                        <strong>Jump from visitor to player in one click</strong>
+                        <p>Use the setup card to start a live match instantly, or browse the source and clone the project for your own experiments.</p>
+                        <div class="utility-links">
+                            <a class="cta-primary" href="#playerCount">Start a Match</a>
+                            <a class="cta-secondary" href="https://craftmonopoly.com" target="_blank" rel="noreferrer">Open Live Site</a>
+                        </div>
+                    </div>
+                    <div class="utility-card">
+                        <span class="utility-badge">Sponsor Slot</span>
+                        <strong>Reserved space for monetization</strong>
+                        <p>This panel is ready for a featured game recommendation, ad unit, affiliate partner, or cross-promo banner once traffic starts landing.</p>
+                        <div class="ad-slot">Featured partner placement
+                            <br>
+                            300 x 250 style promo, rewarded video CTA, or related browser game ad
+                        </div>
+                    </div>
+                    <div class="utility-card" id="moreGames">
+                        <span class="utility-badge">More Games</span>
+                        <strong>Turn one game into a broader browser arcade</strong>
+                        <p>Craft Monopoly can anchor a future mini portal with adjacent strategy, board, and tycoon-style browser games.</p>
+                        <div class="pill-list">
+                            <span>Board Games</span>
+                            <span>Tycoon Games</span>
+                            <span>Multiplayer</span>
+                            <span>AI Matchups</span>
+                        </div>
+                    </div>
+                    <div class="utility-card" id="contactPanel">
+                        <span class="utility-badge">Contact</span>
+                        <strong>Feedback, publishing, or partnership requests</strong>
+                        <p>If you want to report a bug, discuss a publishing deal, or ask about sponsorship space, start with the repository links below.</p>
+                        <div class="utility-links">
+                            <a class="utility-link" href="https://github.com/zhanjianping88/craftmonopoly/issues" target="_blank" rel="noreferrer">Open GitHub Issues</a>
+                            <a class="utility-link" href="https://github.com/zhanjianping88/craftmonopoly" target="_blank" rel="noreferrer">Browse Repository</a>
+                        </div>
                     </div>
                 </div>
 
