@@ -13,11 +13,11 @@
     <meta property="og:description" content="A free Minecraft-style browser board game with AI rivals, property upgrades, and fast strategy rounds.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://craftmonopoly.com/">
-    <meta property="og:image" content="https://craftmonopoly.com/cover.svg">
+    <meta property="og:image" content="https://craftmonopoly.com/media/craftmonopoly-landing.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Craft Monopoly">
     <meta name="twitter:description" content="Play a free Minecraft-style 3D browser board game with AI rivals and fast strategy rounds.">
-    <meta name="twitter:image" content="https://craftmonopoly.com/cover.svg">
+    <meta name="twitter:image" content="https://craftmonopoly.com/media/craftmonopoly-landing.png">
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-7F2RQSY0GR"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -266,6 +266,17 @@
         .utility-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+        .gallery-grid,
+        .guide-grid {
+            display: grid;
+            gap: 16px;
+        }
+        .gallery-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .guide-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
         .utility-card {
             padding: 20px;
             border: 1px solid var(--border-soft);
@@ -321,6 +332,45 @@
             color: var(--text-main);
             font-size: 12px;
             font-weight: 600;
+        }
+        .gallery-card,
+        .guide-card {
+            overflow: hidden;
+            border: 1px solid var(--border-soft);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .gallery-card img {
+            width: 100%;
+            height: 260px;
+            object-fit: cover;
+            display: block;
+        }
+        .gallery-copy,
+        .guide-card {
+            padding: 18px;
+        }
+        .gallery-copy strong,
+        .guide-card strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-main);
+            font-size: 16px;
+        }
+        .gallery-copy p,
+        .guide-card p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.65;
+        }
+        .guide-card a {
+            display: inline-flex;
+            margin-top: 14px;
+            color: var(--gold);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
         }
         .stat-value {
             display: block;
@@ -529,6 +579,8 @@
             .hero-chips,
             .stats-grid,
             .utility-grid,
+            .gallery-grid,
+            .guide-grid,
             .feature-list {
                 grid-template-columns: 1fr;
             }
@@ -594,6 +646,26 @@
                     </div>
                 </div>
 
+                <div>
+                    <h2 class="section-title">Real gameplay screenshots</h2>
+                    <div class="gallery-grid">
+                        <div class="gallery-card">
+                            <img src="media/craftmonopoly-landing.png" alt="Craft Monopoly browser game landing page screenshot">
+                            <div class="gallery-copy">
+                                <strong>Fast browser-first setup</strong>
+                                <p>The first screen explains the game clearly, shows the setup card, and gets players into a match without extra friction.</p>
+                            </div>
+                        </div>
+                        <div class="gallery-card">
+                            <img src="media/craftmonopoly-gameplay.png" alt="Craft Monopoly live gameplay screenshot">
+                            <div class="gallery-copy">
+                                <strong>Actual in-game board view</strong>
+                                <p>The board, HUD, dice flow, and player information are all visible here, which gives new visitors a much stronger trust signal than plain copy.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="utility-grid">
                     <div class="utility-card">
                         <span class="utility-badge">Launch Fast</span>
@@ -632,6 +704,32 @@
                             <a class="utility-link" href="https://github.com/zhanjianping88/craftmonopoly/issues" target="_blank" rel="noreferrer">Open GitHub Issues</a>
                             <a class="utility-link" href="https://github.com/zhanjianping88/craftmonopoly" target="_blank" rel="noreferrer">Browse Repository</a>
                         </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="section-title">Guides and SEO landing pages</h2>
+                    <div class="guide-grid">
+                        <article class="guide-card">
+                            <strong>About Craft Monopoly</strong>
+                            <p>Explains what the project is, who it is for, and why it works as a browser-first game experience.</p>
+                            <a href="about.html">Read the about page</a>
+                        </article>
+                        <article class="guide-card">
+                            <strong>How to Play</strong>
+                            <p>A rules page covering setup, turns, tile types, rent, jail, and the win condition for beginners.</p>
+                            <a href="how-to-play.html">Open the beginner guide</a>
+                        </article>
+                        <article class="guide-card">
+                            <strong>Tips and Strategy</strong>
+                            <p>A strategy page aimed at searchers looking for help winning more games and managing their economy better.</p>
+                            <a href="tips-and-strategy.html">Read strategy tips</a>
+                        </article>
+                        <article class="guide-card">
+                            <strong>Play Online Free</strong>
+                            <p>A dedicated long-tail landing page targeting browser-game search intent and short-path play clicks.</p>
+                            <a href="play-online-free.html">Open the play free page</a>
+                        </article>
                     </div>
                 </div>
 
