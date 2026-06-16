@@ -80,7 +80,7 @@
             inset: 0;
             z-index: 1000;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             padding: 28px;
             overflow-y: auto;
@@ -91,6 +91,7 @@
         }
         .lobby-shell {
             width: min(1180px, 100%);
+            margin: 12px 0 40px;
             display: grid;
             grid-template-columns: minmax(0, 1.2fr) minmax(360px, 430px);
             gap: 28px;
@@ -182,7 +183,7 @@
             max-width: 11ch;
             font-family: "Chakra Petch", sans-serif;
             font-size: clamp(44px, 6vw, 74px);
-            line-height: 0.94;
+            line-height: 1.02;
             letter-spacing: -0.03em;
             color: var(--text-main);
             text-wrap: balance;
@@ -193,6 +194,40 @@
             color: var(--text-muted);
             font-size: 18px;
             line-height: 1.7;
+        }
+        .hero-showcase {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            position: relative;
+            z-index: 1;
+        }
+        .hero-shot {
+            overflow: hidden;
+            border: 1px solid var(--border-soft);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .hero-shot img {
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            display: block;
+        }
+        .hero-shot-copy {
+            padding: 14px 16px 16px;
+        }
+        .hero-shot-copy strong {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-main);
+            font-size: 15px;
+        }
+        .hero-shot-copy p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 13px;
+            line-height: 1.6;
         }
         .hero-actions {
             position: relative;
@@ -584,6 +619,9 @@
             .feature-list {
                 grid-template-columns: 1fr;
             }
+            .hero-showcase {
+                grid-template-columns: 1fr;
+            }
             .skin-stage-layout {
                 grid-template-columns: 1fr;
             }
@@ -625,6 +663,23 @@
                     <a class="cta-secondary" href="https://github.com/zhanjianping88/craftmonopoly" target="_blank" rel="noreferrer">View Source on GitHub</a>
                 </div>
 
+                <div class="hero-showcase">
+                    <div class="hero-shot">
+                        <img src="media/craftmonopoly-landing.png" alt="Craft Monopoly landing page screenshot">
+                        <div class="hero-shot-copy">
+                            <strong>Real setup screen</strong>
+                            <p>This is the actual first screen players see before they start a match.</p>
+                        </div>
+                    </div>
+                    <div class="hero-shot">
+                        <img src="media/craftmonopoly-gameplay.png" alt="Craft Monopoly gameplay screenshot">
+                        <div class="hero-shot-copy">
+                            <strong>Real board gameplay</strong>
+                            <p>This is the live in-game board, HUD, and dice flow, not a mockup.</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="hero-chips">
                     <div class="hero-chip">Instant play<span>Launch a match in seconds right from the browser.</span></div>
                     <div class="hero-chip">2-10 players<span>Play solo against bots or stack a full lobby.</span></div>
@@ -643,26 +698,6 @@
                     <div class="stat-card">
                         <span class="stat-value">Web</span>
                         <span class="stat-label">fully playable in-browser with no download wall</span>
-                    </div>
-                </div>
-
-                <div>
-                    <h2 class="section-title">Real gameplay screenshots</h2>
-                    <div class="gallery-grid">
-                        <div class="gallery-card">
-                            <img src="media/craftmonopoly-landing.png" alt="Craft Monopoly browser game landing page screenshot">
-                            <div class="gallery-copy">
-                                <strong>Fast browser-first setup</strong>
-                                <p>The first screen explains the game clearly, shows the setup card, and gets players into a match without extra friction.</p>
-                            </div>
-                        </div>
-                        <div class="gallery-card">
-                            <img src="media/craftmonopoly-gameplay.png" alt="Craft Monopoly live gameplay screenshot">
-                            <div class="gallery-copy">
-                                <strong>Actual in-game board view</strong>
-                                <p>The board, HUD, dice flow, and player information are all visible here, which gives new visitors a much stronger trust signal than plain copy.</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
