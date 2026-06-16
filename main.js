@@ -668,12 +668,6 @@ document.getElementById('btnCloseAssets').addEventListener('click', () => {
     }
 });
 
-document.getElementById('btnManageAssets').addEventListener('click', () => {
-    // 只有在空闲状态（没在走路，没在摇骰子）时才能打开资产面板
-    if (isRolling || isPlayerMoving) return;
-    openAssetsPanel(players[currentPlayerTurn], false);
-});
-
 // ----------------------------------------------------
 
 // 创建支撑棋盘的巨人
@@ -1114,8 +1108,15 @@ function initGame(playerCount) {
         // 创建状态 UI
         const statusEl = document.createElement('div');
         statusEl.id = `p${player.id}Status`;
+        statusEl.className = 'status-card';
         statusEl.style.color = player.colorHex;
         statusEl.style.fontWeight = 'bold';
+        statusEl.addEventListener('click', () => {
+            const activePlayer = players[currentPlayerTurn];
+            if (!activePlayer || activePlayer.id !== player.id) return;
+            if (isRolling || isPlayerMoving || player.isBankrupt || player.isAI) return;
+            openAssetsPanel(player, false);
+        });
         statusUI.appendChild(statusEl);
     }
 
@@ -1163,7 +1164,22 @@ function updateUI() {
     players.forEach(p => {
         const statusEl = document.getElementById(`p${p.id}Status`);
         if (statusEl) {
-            statusEl.innerText = `${p.name}${p.isAI ? ' (AI)' : ''}: $${p.money}${p.isBankrupt ? ' (Bankrupt)' : ''}`;
+            const isActivePlayer = players[currentPlayerTurn] && players[currentPlayerTurn].id === p.id;
+            const canManageAssets = isActivePlayer && !p.isBankrupt && !p.isAI && !isRolling && !isPlayerMoving;
+            statusEl.classList.toggle('is-active', isActivePlayer);
+            statusEl.classList.toggle('can-manage', canManageAssets);
+            const typeLabel = p.isAI ? 'AI' : 'Human';
+            const stateLabel = p.isBankrupt
+                ? 'Bankrupt'
+                : canManageAssets
+                    ? 'Tap to manage assets'
+                    : isActivePlayer && p.isAI
+                        ? 'AI is taking this turn'
+                    : 'Waiting for turn';
+            statusEl.innerHTML = `
+                <span class="status-card-name">${p.name}: $${p.money}${p.isBankrupt ? ' (Bankrupt)' : ''}</span>
+                <span class="status-card-meta">${typeLabel} player • ${stateLabel}</span>
+            `;
         }
     });
 }
