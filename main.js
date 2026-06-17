@@ -1894,11 +1894,24 @@ function getDiceEuler(number) {
 }
 
 // 绑定掷骰子按钮事件
-document.getElementById('rollBtn').addEventListener('click', () => {
+let lastRollTriggerAt = 0;
+
+function handleRollButtonPress(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const now = performance.now();
+    if (now - lastRollTriggerAt < 350) return;
+    lastRollTriggerAt = now;
+
     // 如果正在掷骰子、玩家正在移动，或正在等待抽卡，则不可再次点击
     if (isRolling || isPlayerMoving || isWaitingForCardPick) return;
     
     const currentPlayer = players[currentPlayerTurn];
+    if (!currentPlayer || currentPlayer.isBankrupt) return;
+    if (currentPlayer.isAI && event && event.isTrusted) return;
     console.log(`[游戏状态] 回合开始: 玩家 ${currentPlayer.id} 准备掷骰子...`);
 
     isRolling = true;
@@ -1937,6 +1950,14 @@ document.getElementById('rollBtn').addEventListener('click', () => {
     
     targetQuaternion1.premultiply(yQuat1);
     targetQuaternion2.premultiply(yQuat2);
+}
+
+const rollBtn = document.getElementById('rollBtn');
+rollBtn.addEventListener('click', handleRollButtonPress);
+rollBtn.addEventListener('pointerup', (event) => {
+    if (event.pointerType === 'touch') {
+        handleRollButtonPress(event);
+    }
 });
 
 // --- 5.6 添加机会卡片牌堆 ---
@@ -2315,11 +2336,17 @@ let targetCameraLook = new THREE.Vector3().copy(defaultCameraTarget);
 
 // 6. 添加轨道控制器（允许用户旋转、平移、缩放，提升体验）
 const controls = new OrbitControls(camera, renderer.domElement);
+const isMobileViewport = window.matchMedia('(max-width: 720px)').matches;
 controls.enableDamping = true; // 阻尼感
 controls.maxPolarAngle = Math.PI / 2 - 0.05; // 限制视角不能钻到桌子底下
 controls.panSpeed = 2.0; // 提高平移速度，默认是1.0
 controls.zoomSpeed = 3.0; // 调高鼠标滚轮缩放速度，默认是1.0
 controls.target.copy(defaultCameraTarget);
+if (isMobileViewport) {
+    controls.enableRotate = false;
+    controls.enablePan = false;
+    controls.enableZoom = false;
+}
 
 // 7. 动画循环
 function animate() {

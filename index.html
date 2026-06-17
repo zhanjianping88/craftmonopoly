@@ -665,6 +665,9 @@
             }
         }
         @media (max-width: 720px) {
+            #gameUI {
+                pointer-events: auto !important;
+            }
             #statusUI {
                 top: 12px !important;
                 left: 12px !important;
@@ -696,6 +699,7 @@
                 transform: translateX(-50%) !important;
                 width: calc(100vw - 24px) !important;
                 z-index: 20 !important;
+                pointer-events: auto !important;
             }
             #topCenterUI h2 {
                 font-size: 20px !important;
@@ -712,6 +716,7 @@
                 width: min(100%, 320px) !important;
                 padding: 14px 20px !important;
                 font-size: 24px !important;
+                touch-action: manipulation !important;
             }
             #resultText,
             #eventText {
@@ -1042,11 +1047,11 @@
         </div>
 
         <!-- 上方：当前回合与控制 -->
-        <div id="topCenterUI" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none;">
+        <div id="topCenterUI" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: auto; z-index: 20;">
             <h2 style="margin: 0; text-shadow: 2px 2px 4px #000; color: white;">3D Monopoly</h2>
             <h3 id="turnText" style="color: #ff3333; text-shadow: 1px 1px 2px #000; font-size: 24px; margin: 10px 0; background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 20px; display: inline-block;">Current Turn: Player 1</h3>
             <br>
-            <button id="rollBtn" style="pointer-events: auto; padding: 12px 30px; font-size: 20px; cursor: pointer; background-color: #4CAF50; color: white; border: 2px solid #388E3C; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-top: 10px; font-weight: bold; transition: transform 0.1s;">🎲 Roll Dice</button>
+            <button id="rollBtn" style="pointer-events: auto; touch-action: manipulation; -webkit-tap-highlight-color: transparent; padding: 12px 30px; font-size: 20px; cursor: pointer; background-color: #4CAF50; color: white; border: 2px solid #388E3C; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-top: 10px; font-weight: bold; transition: transform 0.1s;">🎲 Roll Dice</button>
             <h3 id="resultText" style="color: #FFD700; text-shadow: 2px 2px 4px #000; display: none; margin-top: 15px; font-size: 24px; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px;">Roll: </h3>
             <h3 id="eventText" style="color: #ffffff; background-color: rgba(0,0,0,0.8); padding: 15px 25px; border-radius: 8px; display: none; margin-top: 15px; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid #555;">Event: </h3>
         </div>
