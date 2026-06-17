@@ -753,6 +753,10 @@
                 width: calc(100vw - 24px) !important;
                 z-index: 20 !important;
                 pointer-events: auto !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
             }
             #topCenterUI h2 {
                 display: none !important;
@@ -763,6 +767,8 @@
                 padding: 8px 12px !important;
                 max-width: 100%;
                 box-sizing: border-box;
+                text-align: center !important;
+                backdrop-filter: blur(8px);
             }
             #rollBtn {
                 width: 100% !important;
@@ -772,11 +778,19 @@
             }
             #resultText,
             #eventText {
+                position: absolute !important;
+                left: 50% !important;
+                bottom: calc(100% + 12px) !important;
+                transform: translateX(-50%) !important;
+                width: max-content !important;
+                max-width: calc(100vw - 24px) !important;
                 font-size: 16px !important;
                 padding: 10px 14px !important;
-                margin-top: 10px !important;
-                max-width: 100%;
+                margin: 0 !important;
                 box-sizing: border-box;
+                border-radius: 16px !important;
+                text-align: center !important;
+                box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28) !important;
             }
             #assetsPanel,
             #tradeSetupPanel,

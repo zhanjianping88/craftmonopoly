@@ -1129,7 +1129,7 @@ function initGame(playerCount) {
     // 初始化回合显示
     const firstPlayer = players[0];
     const turnEl = document.getElementById('turnText');
-    turnEl.innerText = `Current Turn: Player ${firstPlayer.id} (${firstPlayer.colorName})`;
+    turnEl.innerText = formatTurnText(firstPlayer);
     turnEl.style.color = firstPlayer.colorHex;
     
     if (firstPlayer.isAI) {
@@ -1140,6 +1140,22 @@ document.getElementById('giantSkin').addEventListener('change', (e) => {
     updatePlayerSkin(giantPlayer, e.target.value);
     console.log(`[系统] 桌面巨人更换了皮肤: ${e.target.value}`);
 });
+
+function isCompactViewport() {
+    return window.matchMedia('(max-width: 720px)').matches;
+}
+
+function formatTurnText(player) {
+    return isCompactViewport()
+        ? `P${player.id} Turn • ${player.colorName}`
+        : `Current Turn: Player ${player.id} (${player.colorName})`;
+}
+
+function formatRollText(total, die1, die2) {
+    return isCompactViewport()
+        ? `Rolled ${total}`
+        : `Roll: ${total} (${die1} + ${die2})`;
+}
 
 // 动画移动状态
 let playerTargetIndex = 0;
@@ -1163,7 +1179,7 @@ function updateAllPlayersPosition() {
 
 // 统一的 UI 更新函数
 function updateUI() {
-    const isCompactViewport = window.matchMedia('(max-width: 720px)').matches;
+    const compactViewport = isCompactViewport();
     players.forEach(p => {
         const statusEl = document.getElementById(`p${p.id}Status`);
         if (statusEl) {
@@ -1175,10 +1191,10 @@ function updateUI() {
             const stateLabel = p.isBankrupt
                 ? 'Bankrupt'
                 : canManageAssets
-                    ? (isCompactViewport ? 'Tap assets' : 'Tap to manage assets')
+                    ? (compactViewport ? 'Tap assets' : 'Tap to manage assets')
                     : isActivePlayer && p.isAI
-                        ? (isCompactViewport ? 'AI turn' : 'AI is taking this turn')
-                    : (isCompactViewport ? 'Waiting' : 'Waiting for turn');
+                        ? (compactViewport ? 'AI turn' : 'AI is taking this turn')
+                    : (compactViewport ? 'Waiting' : 'Waiting for turn');
             statusEl.innerHTML = `
                 <span class="status-card-name">${p.name}: $${p.money}${p.isBankrupt ? ' (Bankrupt)' : ''}</span>
                 <span class="status-card-meta">${typeLabel} player • ${stateLabel}</span>
@@ -1309,7 +1325,7 @@ function endTurn() {
 
     const nextPlayer = players[currentPlayerTurn];
     const turnEl = document.getElementById('turnText');
-    turnEl.innerText = `Current Turn: Player ${nextPlayer.id} (${nextPlayer.colorName})`;
+    turnEl.innerText = formatTurnText(nextPlayer);
     turnEl.style.color = nextPlayer.colorHex;
     console.log(`[系统] 切换至玩家 ${nextPlayer.id} 的回合`);
     
@@ -2332,14 +2348,18 @@ window.addEventListener('click', (event) => {
 });
 
 // --- 镜头控制变量 ---
-const defaultCameraPos = new THREE.Vector3(0, 30, 40);
-const defaultCameraTarget = new THREE.Vector3(0, 0, 0);
+const isMobileViewport = window.matchMedia('(max-width: 720px)').matches;
+const defaultCameraPos = isMobileViewport
+    ? new THREE.Vector3(0, 34, 27)
+    : new THREE.Vector3(0, 30, 40);
+const defaultCameraTarget = isMobileViewport
+    ? new THREE.Vector3(0, 2, 4)
+    : new THREE.Vector3(0, 0, 0);
 let targetCameraPos = new THREE.Vector3().copy(defaultCameraPos);
 let targetCameraLook = new THREE.Vector3().copy(defaultCameraTarget);
 
 // 6. 添加轨道控制器（允许用户旋转、平移、缩放，提升体验）
 const controls = new OrbitControls(camera, renderer.domElement);
-const isMobileViewport = window.matchMedia('(max-width: 720px)').matches;
 controls.enableDamping = true; // 阻尼感
 controls.maxPolarAngle = Math.PI / 2 - 0.05; // 限制视角不能钻到桌子底下
 controls.panSpeed = 2.0; // 提高平移速度，默认是1.0
@@ -2357,15 +2377,29 @@ function animate() {
     
     // 镜头目标控制逻辑
     if (isRolling) {
-        targetCameraPos.set(0, 15, 20);
-        targetCameraLook.set(0, 0, 0);
+        if (isMobileViewport) {
+            targetCameraPos.set(0, 18, 14);
+            targetCameraLook.set(0, 2, 2);
+        } else {
+            targetCameraPos.set(0, 15, 20);
+            targetCameraLook.set(0, 0, 0);
+        }
     } else if (isPlayerMoving) {
         const currentPlayer = players[currentPlayerTurn];
-        targetCameraPos.set(currentPlayer.group.position.x, 20, currentPlayer.group.position.z + 25);
+        if (isMobileViewport) {
+            targetCameraPos.set(currentPlayer.group.position.x, 19, currentPlayer.group.position.z + 17);
+        } else {
+            targetCameraPos.set(currentPlayer.group.position.x, 20, currentPlayer.group.position.z + 25);
+        }
         targetCameraLook.copy(currentPlayer.group.position);
     } else if (isDeckAnimating || isWaitingForCardPick || isCardFlipping) {
-        targetCameraPos.set(0, 20, 15);
-        targetCameraLook.set(0, 0, 0);
+        if (isMobileViewport) {
+            targetCameraPos.set(0, 19, 12);
+            targetCameraLook.set(0, 1, 0);
+        } else {
+            targetCameraPos.set(0, 20, 15);
+            targetCameraLook.set(0, 0, 0);
+        }
     } else {
         targetCameraPos.copy(defaultCameraPos);
         targetCameraLook.copy(defaultCameraTarget);
@@ -2433,7 +2467,7 @@ function animate() {
             
             // 显示结果文字
             const resultEl = document.getElementById('resultText');
-            resultEl.innerText = `Roll: ${rollTotal} (${rollResult1} + ${rollResult2})`;
+            resultEl.innerText = formatRollText(rollTotal, rollResult1, rollResult2);
             resultEl.style.display = 'block';
 
             console.log(`[游戏状态] 掷出点数: ${rollTotal} (${rollResult1} + ${rollResult2})`);
