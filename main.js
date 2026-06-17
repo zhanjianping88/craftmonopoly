@@ -396,9 +396,10 @@ function openAssetsPanel(player, forceDebtMode = false) {
     } else {
         ownedCells.forEach(cell => {
             const div = document.createElement('div');
-            div.style.cssText = 'background: rgba(255,255,255,0.1); margin-bottom: 10px; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;';
+            div.className = 'assets-item';
             
             const info = document.createElement('div');
+            info.className = 'assets-item-info';
             // 计算投入的总成本：地价 + 升级费(每次是地价的 0.3)
             let extraCost = 0;
             if (cell.level >= 0 && cell.level <= 3) {
@@ -410,20 +411,21 @@ function openAssetsPanel(player, forceDebtMode = false) {
             // 卖给银行是半价
             const bankPrice = totalCost * 0.5;
             
-            info.innerHTML = `<strong>${cell.name}</strong> (Level: ${cell.level})<br><span style="font-size: 14px; color: #aaa;">Total Cost: $${totalCost}</span>`;
+            info.innerHTML = `<strong>${cell.name}</strong> (Level: ${cell.level})<br><span class="assets-item-meta">Total Cost: $${totalCost}</span>`;
             
             const btns = document.createElement('div');
+            btns.className = 'assets-item-actions';
             
             // 卖给银行按钮
             const btnBank = document.createElement('button');
             btnBank.innerText = `Sell to Bank ($${bankPrice})`;
-            btnBank.style.cssText = 'padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 5px;';
+            btnBank.className = 'assets-action-btn assets-action-danger';
             btnBank.onclick = () => sellToBank(player, cell, bankPrice);
             
             // 卖给玩家按钮 (如果在负债强制模式下，为了简单可以禁用，或者允许。这里我们允许)
             const btnPlayer = document.createElement('button');
             btnPlayer.innerText = 'Sell to Another Player';
-            btnPlayer.style.cssText = 'padding: 5px 10px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 5px;';
+            btnPlayer.className = 'assets-action-btn assets-action-trade';
             btnPlayer.onclick = () => initiateTrade(player, cell);
             
             // 升级/建房按钮
@@ -434,7 +436,7 @@ function openAssetsPanel(player, forceDebtMode = false) {
                 // 让我统一逻辑：升一级小房 = baseHouseCost, 升旅馆 = baseHouseCost * 5.
                 const cost = cell.level < 3 ? Math.floor(cell.price * 0.3) : Math.floor(cell.price * 0.3) * 5;
                 btnBuild.innerText = `Build ($${cost})`;
-                btnBuild.style.cssText = 'padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer;';
+                btnBuild.className = 'assets-action-btn assets-action-build';
                 btnBuild.onclick = () => {
                     if (player.money >= cost) {
                         player.money -= cost;
@@ -450,7 +452,7 @@ function openAssetsPanel(player, forceDebtMode = false) {
             } else {
                 btnBuild.innerText = 'Maxed Out';
                 btnBuild.disabled = true;
-                btnBuild.style.cssText = 'padding: 5px 10px; background: #555; color: white; border: none; border-radius: 3px; cursor: not-allowed;';
+                btnBuild.className = 'assets-action-btn assets-action-disabled';
             }
             
             btns.appendChild(btnBank);
@@ -1161,6 +1163,7 @@ function updateAllPlayersPosition() {
 
 // 统一的 UI 更新函数
 function updateUI() {
+    const isCompactViewport = window.matchMedia('(max-width: 720px)').matches;
     players.forEach(p => {
         const statusEl = document.getElementById(`p${p.id}Status`);
         if (statusEl) {
@@ -1172,10 +1175,10 @@ function updateUI() {
             const stateLabel = p.isBankrupt
                 ? 'Bankrupt'
                 : canManageAssets
-                    ? 'Tap to manage assets'
+                    ? (isCompactViewport ? 'Tap assets' : 'Tap to manage assets')
                     : isActivePlayer && p.isAI
-                        ? 'AI is taking this turn'
-                    : 'Waiting for turn';
+                        ? (isCompactViewport ? 'AI turn' : 'AI is taking this turn')
+                    : (isCompactViewport ? 'Waiting' : 'Waiting for turn');
             statusEl.innerHTML = `
                 <span class="status-card-name">${p.name}: $${p.money}${p.isBankrupt ? ' (Bankrupt)' : ''}</span>
                 <span class="status-card-meta">${typeLabel} player • ${stateLabel}</span>
