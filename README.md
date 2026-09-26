@@ -5,7 +5,7 @@
 
 ![Craft Monopoly cover](./cover.svg)
 
-Craft Monopoly is a free browser game with Minecraft-inspired 3D visuals and Monopoly-style strategy gameplay. Players can buy properties, upgrade districts, pay rent, trigger chance cards, and compete against human or AI opponents directly in the browser.
+Craft Monopoly is a local property game with Minecraft-inspired 3D visuals. Roll across a 28-space board, claim plots, control a biome, upgrade buildings, collect rent, and survive random events against friends or AI. The World Storm adds escalating upkeep, and the last solvent player wins.
 
 ## Play Online
 
@@ -23,9 +23,11 @@ Play the live site here:
 
 - Free browser-based gameplay
 - Minecraft-style 3D board and character skins
-- 2 to 10 players
-- Human and AI player support
-- Property buying, rent, upgrades, chance cards, tax, and jail mechanics
+- 2 to 10 local players in pass-and-play or AI combinations
+- A player-count-tuned setup window followed by escalating World Storm upkeep
+- Two-of-three biome control, property upgrades, rent attacks, and last-player-standing victory
+- Property buying, building upgrades, biome monopolies, rent, random event cards, tax, and missed turns
+- Responsive game UI with character selection and voxel-style Three.js board
 
 ## Project links
 
@@ -35,7 +37,7 @@ Play the live site here:
 
 ## Local development
 
-Run the project locally:
+Run the project locally from this directory:
 
 ```bash
 python3 -m http.server 4173 --directory .
@@ -45,8 +47,4 @@ Then open:
 
 - `http://localhost:4173`
 
-## Monetization-ready direction
-
-- The landing page is structured for SEO and paid traffic funnels
-- The homepage includes reserved placement for sponsor or ad units
-- The repository page now acts as an additional discovery surface for the game
+The game is a static browser app. Three.js is loaded from jsDelivr, so the first page load needs an internet connection.
